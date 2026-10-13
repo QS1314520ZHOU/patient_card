@@ -1,0 +1,99 @@
+# 放在 JAR 同级 config/application.yml，换医院只修改本文件。
+server:
+  port: 18088
+
+# SmartCare：patient、score、configBed、department 所在MongoDB
+mongo:
+  host: 192.168.5.155
+  port: 32121
+  database: SmartCare
+  username: dxm
+  password: 请填写实际密码
+  authSource: SmartCare
+  authMechanism: SCRAM-SHA-256
+  collections:
+    patient: patient
+    score: score
+    deviceBind: deviceBind
+    # 床旁采集：呼吸模式 code=param_HuXiMoShi（strVal），pid 关联患者；固定呼吸机不进 deviceBind
+    bedside: bedside
+  # DataCenter 第二库（隔离/抢救医嘱 VI_ICU_ZYYZ）；database 留空=停用相关角标
+  # 下列 host/port/username/password/authSource/authMechanism 全部可省略，
+  # 省略时缺省跟随上面的主库配置（authSource 缺省为本段的 database）。
+  # 仅当 DataCenter 与 SmartCare 不是同一个 Mongo 实例、或账号不同时，才逐项显式覆盖。
+  center:
+    database: DataCenter
+    # host: 192.168.5.155          # 缺省 = mongo.host
+    # port: 32121                  # 缺省 = mongo.port
+    # username: dxm                # 缺省 = mongo.username；写成空值 "" 表示免认证连接
+    # password: 请填写实际密码      # 缺省 = mongo.password
+    # authSource: DataCenter       # 缺省 = mongo.center.database
+    # authMechanism: SCRAM-SHA-256 # 缺省 = SCRAM-SHA-256
+
+# VTE MySQL
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.0.172:3306/hmcdss2?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: his_vte
+    password: 请填写实际密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 3000
+      maximum-pool-size: 5
+      minimum-idle: 0
+
+vte:
+  enabled: true
+
+risk:
+  pressure:
+    high-max: 12
+    medium-max: 14
+  nutrition:
+    medium-min: 3
+    high-min: 5
+  fall:
+    medium-min: 25
+    high-min: 45
+  score-types:
+    fall: patientFallDangerFactor
+    pressure: pressureDamageScore,bradenScore,bradenNurseScore
+    rass: rass
+    gcs: gcsScore
+    sofa: sofa
+    apache: apacheII
+
+# 科室概览 / 大交班大屏（详见 README「大屏」章节）
+overview:
+  refresh-seconds: 60
+  snapshot-ttl-seconds: 600
+  ventilator:
+    unbind-field: unBindTime
+    type-field: type
+    type-values: vent
+    # 呼吸机模式参数码（bedside.strVal，按优先级取最新非空值）
+    mode-codes: param_HuXiMoShi,param_vent_mode
+    # 固定呼吸机判定窗：bedside 近 N 小时有 param_HuXiMoShi 采集即计为在用（无 deviceBind 记录）。
+    # 本地库为 2026-10-08 截止的历史快照，暂放宽到 168h 便于联调；生产环境改回 24。
+    capture-window-hours: 168
+  departure:
+    time-fields: icuDischargeTime,dischargeTime
+  organ-support-types: ECMO,IABP
+  support:
+    crrt-values: crrt
+  tube:
+    airway-types: 气管插管,气切套管
+    cvc-types: 中心静脉导管,PICC管
+    urine-types: 尿管
+    airway-warn-days: 7
+    airway-crit-days: 14
+    cvc-crit-days: 14
+    urine-warn-days: 7
+  vasoactive:
+    keywords: 去甲肾上腺素,去甲,垂体后叶素,多巴胺,多巴酚丁胺,肾上腺素,血管加压素,去氧肾上腺素,异丙肾上腺素,米力农,硝普钠,硝酸甘油,乌拉地尔,尼卡地平,酚妥拉明,艾司洛尔,拉贝洛尔
+  night:
+    start-hour: 20
+    end-hour: 8
+  rescue-keywords: 除颤,心肺复苏,抢救
+  los:
+    long-stay-days: 14

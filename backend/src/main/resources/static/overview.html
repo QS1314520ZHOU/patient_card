@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>重症医学科 · 早交班</title>
+  <link rel="stylesheet" href="overview.css">
+</head>
+<body>
+
+<!-- ================= 顶栏：科室 / 班次 / 操作（极限压薄） ================= -->
+<header id="topbar">
+  <div class="brand">
+    <h1 id="deptTitle">重症医学科 · 早交班</h1>
+    <span id="shiftPill" class="shift-pill" title="交班事件窗（含起点不含终点）">—</span>
+    <span id="asOf" class="as-of">数据更新 —</span>
+    <span id="demoBadge" class="demo-badge" hidden>演示数据</span>
+  </div>
+  <div class="actions">
+    <button id="btnHandover" type="button" title="交接模式：停止轮播并固定浏览顺序">交接模式</button>
+    <button id="btnCarousel" type="button" title="普通浏览自动轮播，默认关闭">自动轮播</button>
+    <button id="btnRefresh" type="button">刷新</button>
+    <button id="btnFullscreen" type="button">全屏</button>
+    <button id="btnExport" type="button" title="调用浏览器打印，另存为 PDF">导出PDF</button>
+  </div>
+</header>
+
+<!-- ================= KPI 聚合条：单行横向指标（严禁大方块） ================= -->
+<section id="kpiStrip" aria-label="核心统计">
+  <div id="kpiItems" class="kpi-items"></div>
+  <div id="quickFilter" class="quick-filter" role="group" aria-label="床位快速筛选">
+    <span class="qf-label">筛选</span>
+    <button type="button" data-filter="all" class="active">全部</button>
+    <button type="button" data-filter="vent">有创通气</button>
+    <button type="button" data-filter="shock">休克/升压药</button>
+    <button type="button" data-filter="critical">极危重</button>
+    <button type="button" data-filter="new">新入科</button>
+  </div>
+</section>
+
+<!-- ================= 主区：医疗组床位网格（75%） + 联动抽屉（25%） ================= -->
+<main id="mainArea">
+  <section id="groupsPane">
+    <div id="groupsToolbar">
+      <div class="seg-group">
+        <span class="seg-label">事件窗</span>
+        <div class="seg" id="windowSeg" role="group" aria-label="交班事件窗口径">
+          <button type="button" data-preset="prevShift" class="active" title="本院配置的上一已完成班次，由后端按班次配置计算">上一班</button>
+          <button type="button" data-preset="last24h" title="以数据截至时刻回溯 24 小时">最近24小时</button>
+        </div>
+      </div>
+      <div class="seg-group">
+        <span class="seg-label">视图</span>
+        <div class="seg" id="viewSeg" role="group" aria-label="交班视图">
+          <button type="button" data-view="both" class="active" title="医护联合交班：全部指标与标签">综合</button>
+          <button type="button" data-view="doctor" title="医生视角：诊断、评分趋势、器官支持与危急值">医生</button>
+          <button type="button" data-view="nurse" title="护理视角：风险、管路、出入量与护理重点">护理</button>
+        </div>
+      </div>
+      <div class="seg-group">
+        <label for="sortMode" class="seg-label">交班顺序</label>
+        <select id="sortMode" title="切换患者浏览/交班顺序">
+          <option value="group">按医疗组</option>
+          <option value="bed">按床号</option>
+          <option value="severity">按病情严重度</option>
+          <option value="admission">按入科时间（新收优先）</option>
+        </select>
+      </div>
+      <button id="btnChanges" type="button" class="tool-btn"
+              title="本事件窗内的结构化变化：新收、离科、危急值、评分、管路、支持与微泵">本班变化</button>
+      <span id="toolbarNote" class="toolbar-note"></span>
+    </div>
+    <div id="groupsScroll"></div>
+  </section>
+
+  <aside id="sidePane">
+    <!-- 上半部：今日交班重点待办 -->
+    <section class="panel todo-panel">
+      <header class="panel-head">
+        <h2>今日交班重点</h2>
+        <span id="todoCount" class="panel-meta"></span>
+      </header>
+      <div id="todoList" class="todo-list"></div>
+    </section>
+
+    <!-- 下半部：床位联动速览 -->
+    <section class="panel inspector-panel">
+      <header class="panel-head">
+        <h2>床位速览</h2>
+        <button id="btnInspectorDetail" type="button" class="link-btn" hidden>交班详情</button>
+      </header>
+      <div id="inspector" class="inspector"></div>
+    </section>
+  </aside>
+</main>
+
+<!-- ================= 底栏：辅助指标 + 免责声明 ================= -->
+<footer id="qualityBar">
+  <div id="auxBar" class="aux-bar" aria-label="辅助指标"></div>
+  <div class="quality-right">
+    <span id="qualityText">本屏用于交班辅助，非床旁实时监护。</span>
+    <span id="snapshotText"></span>
+  </div>
+</footer>
+
+<!-- 页面状态：等待上下文 / 加载 / 错误 / 空 -->
+<div id="stateOverlay" class="state-overlay" hidden>
+  <div class="state-card">
+    <div id="stateTitle" class="state-title">正在获取科室上下文</div>
+    <div id="stateCopy" class="state-copy">等待宿主传递交班上下文…</div>
+    <button id="stateRetry" type="button" hidden>重试</button>
+  </div>
+</div>
+
+<!-- 统计下钻 -->
+<div id="drillModal" class="modal-mask" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <span id="drillTitle">名单</span>
+      <span id="drillMeta" class="modal-meta"></span>
+      <button id="drillClose" type="button" class="icon-btn">关闭</button>
+    </div>
+    <div id="drillBody" class="modal-body"></div>
+  </div>
+</div>
+
+<!-- 患者交班详情 -->
+<div id="handoverDrawer" class="drawer-mask" hidden>
+  <div class="drawer-card">
+    <div class="drawer-head">
+      <span id="handoverTitle">交班详情</span>
+      <button id="handoverClose" type="button" class="icon-btn">关闭</button>
+    </div>
+    <div id="handoverBody" class="drawer-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="overview-demo.js"></script>
+<script src="overview.js"></script>
+</body>
+</html>

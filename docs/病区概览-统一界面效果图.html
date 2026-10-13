@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>病区概览 · 原卡片 + 轻统计</title>
+<style>
+  :root {
+    --bg: #F7F8FA; --panel: #fff; --line: #E6E5E3;
+    --ink: #2C2C2B; --ink2: #4A4A48; --ink3: #7D7A75;
+    --accent: #2F6FED; --danger: #D95C58; --danger-bg: #FDECEC;
+    --warn: #C47B1A; --warn-bg: #FBF0DC;
+    --info: #2F6FED; --info-bg: #E8F0FE;
+    --ok: #3A9A6A; --ok-bg: #E7F6EE;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); font-size: 14px; overflow: hidden;
+  }
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+
+  .topbar {
+    flex: 0 0 48px; display: flex; align-items: center; gap: 12px;
+    padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { font-size: 15px; font-weight: 700; }
+  .pill {
+    background: var(--info-bg); color: var(--info); border-radius: 4px;
+    padding: 3px 8px; font-size: 12px; font-weight: 600;
+  }
+  .as-of { color: var(--ink3); font-size: 12px; }
+  .tag-demo {
+    background: var(--warn-bg); color: var(--warn); border-radius: 4px;
+    padding: 2px 6px; font-size: 11px;
+  }
+  .actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    border: 1px solid var(--line); background: var(--panel); border-radius: 6px;
+    padding: 6px 14px; font-size: 13px; color: var(--ink2); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* KPI：可点、有反馈 */
+  .kpi {
+    flex: 0 0 42px; display: flex; align-items: center;
+    padding: 0 8px; background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .kpi-item {
+    display: flex; align-items: baseline; gap: 5px; padding: 6px 14px;
+    border-right: 1px solid #F0EFED; white-space: nowrap;
+    cursor: pointer; border-radius: 6px; transition: background .12s;
+    user-select: none;
+  }
+  .kpi-item:hover { background: #F0F5FF; }
+  .kpi-item:active { background: #E0EBFF; }
+  .kpi-item .lab { color: var(--ink3); font-size: 12px; }
+  .kpi-item .val { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .kpi-item .val em { font-style: normal; font-size: 12px; font-weight: 400; color: var(--ink3); }
+  .kpi-item.alert .val { color: var(--danger); }
+  .kpi-item .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--danger);
+    display: inline-block; margin-left: 2px;
+  }
+  .kpi-tools { margin-left: auto; display: flex; gap: 6px; padding-left: 12px; }
+  .chip-btn {
+    border: 1px solid var(--line); background: #FBFAF9; border-radius: 999px;
+    padding: 4px 12px; font-size: 12px; color: var(--ink2); cursor: pointer;
+  }
+  .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .chip-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .main { flex: 1; display: flex; min-height: 0; }
+  .content { flex: 1; overflow: auto; padding: 14px 16px 18px; }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-thumb { background: #D8D6D2; border-radius: 4px; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px 12px;
+    align-items: stretch;
+  }
+  @media (max-width: 1600px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 1280px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  /* 卡片：对齐现网，诊断只留 2 行，呼吸感更好 */
+  .card {
+    min-height: 248px; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+    cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  }
+  .card:hover { border-color: #C9D7F5; box-shadow: 0 2px 8px rgba(47,111,237,.08); }
+  .card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(47,111,237,.16); }
+
+  .card-head {
+    height: 40px; flex: 0 0 40px; padding: 0 12px;
+    display: flex; align-items: center; border-bottom: 1px solid var(--line);
+    background: #FBFAF9;
+  }
+  .bed { font-size: 16px; font-weight: 700; min-width: 48px; }
+  .name { flex: 1; text-align: center; font-size: 15px; font-weight: 700; }
+  .head-right {
+    display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+    min-width: 72px;
+  }
+  .days { color: var(--ink3); font-size: 12px; white-space: nowrap; }
+  /* 长程：头部橙色角标（与交班大屏一致） */
+  .pill-days {
+    font-size: 11px; border-radius: 4px; padding: 1px 6px; white-space: nowrap;
+    color: var(--ink3); background: #F0EFED;
+  }
+  .pill-days.long {
+    color: var(--warn); background: var(--warn-bg); font-weight: 700;
+    border: 1px solid #F0D9A8;
+  }
+
+  .card-body {
+    flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-start;
+    padding: 10px 12px 0; gap: 10px;
+  }
+  .profile {
+    flex: 0 0 52px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 50%; object-fit: cover;
+    background: #E8E6E3; display: block;
+  }
+  .gender {
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 700;
+  }
+  .gender.male { color: #2783DE; background: #E5F2FC; }
+  .gender.female { color: #D95C77; background: #FCE8ED; }
+  .age { font-size: 12px; font-weight: 700; }
+
+  .details {
+    flex: 1; min-width: 0; color: var(--ink2); font-size: 13px; line-height: 1.45;
+  }
+  .row { margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
+  .row.nowrap { white-space: nowrap; }
+  .lab { color: var(--ink3); }
+  .meta-line {
+    display: flex; gap: 10px; color: var(--ink3); font-size: 12px;
+    margin-bottom: 4px; white-space: nowrap; overflow: hidden;
+  }
+  .meta-line b { color: var(--ink2); font-weight: 500; }
+  /* 诊断：锁定两行像素高度，杜绝叠字穿透 */
+  .patient-diag, .diag {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #334155;
+    margin: 8px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 39px;
+    min-height: 39px;
+    max-height: 39px;
+    word-break: break-word;
+    cursor: default;
+  }
+  .who-line { color: var(--ink3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who-line b { color: var(--ink2); font-weight: 600; }
+
+  /* 标签：同层 Flex，统一 22px 高，只靠色调分主次 */
+  .card-foot {
+    flex: 0 0 auto; margin-top: auto; padding: 8px 10px 10px;
+    display: flex; flex-wrap: wrap; gap: 5px;
+    border-top: 1px solid #F5F3F1; align-items: center; align-content: flex-end;
+    min-height: 38px;
+  }
+  .tag {
+    display: inline-flex; align-items: center; height: 22px;
+    font-size: 11px; font-weight: 600; border-radius: 4px;
+    padding: 0 7px; white-space: nowrap;
+    border: 1px solid transparent; line-height: 1;
+  }
+  .tag.alert-vent { background: #E0F2FE; color: #0369A1; border-color: #7DD3FC; }
+  .tag.alert-crit { background: #FEE2E2; color: #B91C1C; border-color: #FCA5A5; }
+  .tag.alert-high { background: #FEF3C7; color: #B45309; border-color: #FCD34D; }
+  .tag.soft, .tag.mute {
+    background: #F1F5F9; color: #64748B; border-color: #E2E8F0; font-weight: 500;
+  }
+  .tag-soft-wrap { display: contents; }
+
+  /* 空床：虚线幽灵 Ghost */
+  .empty-card {
+    min-height: 130px; height: 100%; border: 1px dashed #CBD5E1; border-radius: 8px;
+    background: #FAFAFA; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    color: #94A3B8; text-align: center; cursor: default;
+  }
+  .empty-card .ghost-icon {
+    width: 28px; height: 28px; opacity: .45;
+  }
+  .empty-card .ghost-text { font-size: 13px; font-weight: 500; letter-spacing: .02em; }
+  .empty-card .ghost-bed { font-size: 16px; font-weight: 700; color: #94A3B8; }
+
+  /* 右侧抽屉 */
+  .drawer {
+    flex: 0 0 0; width: 0; overflow: hidden; background: var(--panel);
+    border-left: 1px solid var(--line); transition: flex .2s, width .2s;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { flex: 0 0 320px; width: 320px; }
+  .drawer-head {
+    flex: 0 0 44px; display: flex; align-items: center; padding: 0 14px;
+    border-bottom: 1px solid var(--line); font-weight: 700; font-size: 14px;
+  }
+  .drawer-head .close {
+    margin-left: auto; border: 0; background: none; color: var(--ink3);
+    font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px;
+  }
+  .drawer-head .close:hover { color: var(--ink); }
+  .drawer-body { flex: 1; overflow: auto; padding: 12px 14px 16px; }
+
+  .stat-block { margin-bottom: 14px; }
+  .stat-block h3 {
+    font-size: 12px; color: var(--ink3); font-weight: 600; margin-bottom: 8px;
+    padding-bottom: 4px; border-bottom: 1px solid #F0EFED;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; font-size: 13px; color: var(--ink2);
+    border-bottom: 1px dashed #F5F3F1;
+  }
+  .stat-row b { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .stat-row .sub { font-size: 11px; color: var(--ink3); display: block; margin-top: 2px; }
+
+  /* 医疗组可展开明细 */
+  .grp {
+    border: 1px solid var(--line); border-radius: 6px; margin-bottom: 8px;
+    background: #FBFAF9; overflow: hidden;
+  }
+  .grp-head {
+    display: flex; align-items: flex-start; gap: 6px; padding: 8px 10px;
+    cursor: pointer; user-select: none;
+  }
+  .grp-head:hover { background: #F5F8FF; }
+  .grp-chev {
+    flex: 0 0 12px; width: 0; height: 0; margin-top: 5px;
+    border-left: 5px solid var(--ink3); border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent; transition: transform .15s;
+  }
+  .grp.open .grp-chev { transform: rotate(90deg); border-left-color: var(--accent); }
+  .grp-main { flex: 1; min-width: 0; }
+  .grp-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .grp-doc { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .grp-num { text-align: right; flex: 0 0 auto; }
+  .grp-num b { font-size: 15px; font-weight: 700; color: var(--ink); display: block; }
+  .grp-num .sub { font-size: 11px; color: var(--ink3); display: block; margin-top: 2px; }
+  .grp-list {
+    display: none; border-top: 1px solid var(--line); background: #fff;
+    padding: 4px 0;
+  }
+  .grp.open .grp-list { display: block; }
+  .grp-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 28px;
+    font-size: 12.5px; color: var(--ink2); cursor: pointer;
+  }
+  .grp-item:hover { background: #F5F8FF; }
+  .grp-item.active { background: #E8F0FE; }
+  .grp-item .b { font-weight: 700; min-width: 36px; color: var(--ink); }
+  .grp-item .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grp-item .m { color: var(--ink3); font-size: 11px; white-space: nowrap; }
+  .grp-item .flags { display: flex; gap: 3px; }
+  .flag {
+    font-size: 10px; border-radius: 3px; padding: 0 4px; font-weight: 600;
+  }
+  .flag.vent { background: var(--info-bg); color: var(--info); }
+  .flag.crrt { background: var(--info-bg); color: var(--info); }
+  .flag.air { background: #FFF1E6; color: #C2410C; }
+  .flag.risk { background: var(--danger-bg); color: var(--danger); }
+
+  .todo {
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+    margin-bottom: 8px; background: #FBFAF9; cursor: pointer;
+  }
+  .todo:hover { border-color: var(--accent); background: #F5F8FF; }
+  .todo .cat {
+    display: inline-block; font-size: 11px; font-weight: 700; border-radius: 3px;
+    padding: 1px 6px; margin-bottom: 4px;
+  }
+  .todo .cat.danger { background: var(--danger-bg); color: var(--danger); }
+  .todo .cat.warn { background: var(--warn-bg); color: var(--warn); }
+  .todo .cat.info { background: var(--info-bg); color: var(--info); }
+  .todo .body { font-size: 12.5px; color: var(--ink2); line-height: 1.45; }
+  .todo .body b { color: var(--ink); }
+
+  .pick-card {
+    border: 1px solid #C9D7F5; background: #F5F8FF; border-radius: 8px;
+    padding: 12px; margin-bottom: 14px;
+  }
+  .pick-card .t { font-size: 15px; font-weight: 700; }
+  .pick-card .s { color: var(--ink3); font-size: 12px; margin: 2px 0 8px; }
+  .pick-card .d {
+    font-size: 12.5px; color: var(--ink2); line-height: 1.5; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  /* 出入量：浅灰微底仪表格 */
+  .mini-io { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mini-io .cell {
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 10px;
+  }
+  .mini-io .cell.bal-pos { background: #ECFDF5; border-color: #A7F3D0; }
+  .mini-io .cell.bal-neg { background: #EFF6FF; border-color: #BFDBFE; }
+  .mini-io .l {
+    font-size: 11px; color: #94A3B8; font-weight: 500; margin-bottom: 3px;
+  }
+  .mini-io .v {
+    font-weight: 700; font-size: 18px; color: #0F172A; letter-spacing: -.02em; line-height: 1.1;
+  }
+  .mini-io .v small { font-size: 11px; font-weight: 500; color: #94A3B8; margin-left: 2px; }
+  .mini-io .cell.bal-pos .v { color: #059669; }
+  .mini-io .cell.bal-neg .v { color: #2563EB; }
+
+  .hint {
+    flex: 0 0 auto; padding: 6px 16px; background: var(--panel);
+    border-top: 1px solid var(--line); color: var(--ink3); font-size: 12px;
+    display: flex; gap: 16px; align-items: center;
+  }
+  .hint b { color: var(--ink2); }
+  .hint .right { margin-left: auto; }
+
+  .toast {
+    position: fixed; right: 20px; top: 60px; z-index: 20;
+    background: #0F172A; color: #fff; padding: 8px 14px; border-radius: 6px;
+    font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: .92; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <h1>江南重症医学科 · 病区概览</h1>
+    <span class="pill">上一班 08:00 – 20:00</span>
+    <span class="as-of">数据更新 2026-10-13 08:47</span>
+    <span class="tag-demo">效果图 · 演示</span>
+    <div class="actions">
+      <button class="btn" type="button" id="btnStats">统计</button>
+      <button class="btn" type="button" id="btnHandover">交接模式</button>
+      <button class="btn primary" type="button" id="btnRefresh">刷新</button>
+      <button class="btn" type="button" id="btnFull">全屏</button>
+    </div>
+  </header>
+
+  <section class="kpi" aria-label="核心统计">
+    <div class="kpi-item" role="button" tabindex="0" data-tip="点击查看医疗组分布"><span class="lab">在科</span><span class="val">25/31<em>床</em></span></div>
+    <div class="kpi-item" role="button" tabindex="0" data-filter="empty"><span class="lab">空床</span><span class="val">3<em>张</em></span></div>
+    <div class="kpi-item" role="button" tabindex="0" data-tip="点击查看呼吸机名单"><span class="lab">呼吸机</span><span class="val">8<em>人</em></span></div>
+    <div class="kpi-item" role="button" tabindex="0" data-tip="点击查看跌倒高风险"><span class="lab">跌倒高</span><span class="val">4<em>人</em></span></div>
+    <div class="kpi-item" role="button" tabindex="0" data-tip="点击查看压疮高风险"><span class="lab">压疮高</span><span class="val">6<em>人</em></span></div>
+    <div class="kpi-item" role="button" tabindex="0" data-filter="new"><span class="lab">新收</span><span class="val">2<em>人</em></span></div>
+    <div class="kpi-item alert" role="button" tabindex="0" data-tip="点击查看待闭环危急值"><span class="lab">待闭环危急值</span><span class="val">1<em>项</em></span><span class="dot"></span></div>
+    <div class="kpi-tools">
+      <button class="chip-btn active" type="button" data-f="all">全部</button>
+      <button class="chip-btn" type="button" data-f="new">新入科</button>
+      <button class="chip-btn" type="button" data-f="long">长程</button>
+      <button class="chip-btn" type="button" data-f="empty">仅空床</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div class="content"><div class="grid" id="grid"></div></div>
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">统计与交班重点<button class="close" type="button" id="btnClose">×</button></div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+  </div>
+
+  <div class="hint">
+    <span>强预警才有色块 · 饮食/血型为灰字 · 诊断严格 2 行</span>
+    <span>点 <b>KPI / 统计 / 患者卡 / 待办</b> 均可交互</span>
+    <span class="right">本屏用于交班辅助，非床旁实时监护</span>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+function avatarSrc(age, gender) {
+  const s = gender === 'Male' || gender === '男' ? 'man' : 'woman';
+  if (age === 0) return `assets/baby-${s}.png`;
+  if (age <= 6) return `assets/toddler-${s}.png`;
+  if (age <= 14) return `assets/child-${s}.png`;
+  if (age <= 16) return `assets/teen-${s}.png`;
+  if (age <= 24) return `assets/young-${s}.png`;
+  if (age < 60) return `assets/adult-${s}.png`;
+  return `assets/elderly-${s}.png`;
+}
+
+const patients = [
+  { id:'01', bed:'01', name:'石昌辉', gender:'女', age:86, days:0, group:'一组',
+    mrn:'2082695', admit:'2026-10-12 13:10', tel:'13908326839', doctor:'黄文其',
+    diag:'为肾透析的静脉导管功能不良|动静脉内瘘血栓形成|慢性肾脏病5期|肾性贫血|高血压3级（极高危）|人工动静脉瘘狭窄|人工动静脉瘘血栓形成',
+    vent:true, ventMode:'VCD', difficultAirway:true, vasoactive:'去甲NE',
+    pressureHigh:true, fallHigh:false, pipeHigh:true, nutritionHigh:true,
+    diet:'糖尿病饮食', blood:'A型 Rh阳性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'02', bed:'02', name:'李子琴', gender:'女', age:55, days:2, group:'一组',
+    mrn:'2082752', admit:'2026-10-10 16:53', tel:'13983590572', doctor:'陈晓东',
+    diag:'肝细胞癌(CNLC Ia期)|乙型肝炎后肝硬化失代偿期|肝硬化|伴食管胃底静脉曲张|慢性乙型病毒性肝炎|慢性非萎缩性胃炎|脾大门静脉高压|白细胞减少|血小板减少',
+    pressureHigh:true, nutritionHigh:true,
+    diet:'低盐饮食', blood:'O型 Rh阳性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'03', bed:'03', name:'向国安', gender:'男', age:61, days:2, group:'二组',
+    mrn:'2081150', admit:'2026-10-10 18:11', tel:'13002383666', doctor:'童瑾',
+    diag:'多处损伤|头部的损伤|头皮裂伤|蛛网膜下腔出血|锁骨骨折|气胸|肋骨骨折|胸腔积液|胸椎骨折|胸椎横突骨折|肱骨骨折|鹰嘴骨折',
+    vent:true, ventMode:'AC', difficultAirway:true, vasoactive:'去甲NE',
+    pressureHigh:true,
+    diet:'禁食', blood:'B型 Rh阳性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'04', bed:'04', name:'王成伦', gender:'男', age:77, days:8, group:'二组',
+    mrn:'2080126', admit:'2026-10-04 18:38', tel:'15902409362', doctor:'陈晓东',
+    diag:'胆囊结石伴坏疽性胆囊炎|脓毒血症|腹腔感染|肺部感染|消化道出血|泌尿道感染',
+    crrt:true, pressureHigh:true, fallHigh:true, nutritionHigh:true,
+    diet:'肠内营养', blood:'AB型 Rh阳性' },
+  { id:'05', bed:'05', name:'王伟', gender:'男', age:49, days:1, group:'二组',
+    mrn:'2083142', admit:'2026-10-11 16:17', tel:'13637758607', doctor:'陈晓东',
+    diag:'肝细胞癌|肝硬化|慢性乙型病毒性肝炎|肝功能不全|肝癌(CNLC Ia期)|乙型肝炎后肝硬化|肝术后|肺小结节|肺炎',
+    pressureHigh:true, nutritionHigh:true,
+    diet:'低蛋白饮食', blood:'A型 Rh阴性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'06', bed:'06', name:'张其育', gender:'男', age:60, days:3, group:'一组',
+    mrn:'2081090', admit:'2026-10-09 12:00', tel:'13883939062', doctor:'陈晓东',
+    diag:'乙型肝炎后肝硬化失代偿期|单侧腹股沟疝|慢性乙型病毒性肝炎|高钾血症|胸腔积液|腹膜炎|I型呼吸衰竭|疼痛|消化道出血',
+    vent:true, ventMode:'SIMV', pipeHigh:true, pressureHigh:true,
+    diet:'流质饮食', blood:'O型 Rh阳性' },
+  { id:'07', bed:'07', name:'吴娅玲', gender:'女', age:70, days:0, group:'一组',
+    mrn:'2084211', admit:'2026-10-13 01:36', tel:'13452307534', doctor:'童瑾',
+    diag:'蛛网膜下腔出血|前交通动脉瘤破裂伴蛛网膜下隙出血|多个脑室出血|脑积水',
+    vent:true, difficultAirway:true, pressureHigh:true,
+    diet:'禁食', blood:'A型 Rh阳性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'09', bed:'09', name:'冉龙全', gender:'男', age:42, days:4, group:'三组',
+    mrn:'2082210', admit:'2026-10-08 18:48', tel:'13996921964', doctor:'童瑾',
+    diag:'酒精性肝硬化失代偿期',
+    pressureHigh:true, diet:'低盐饮食', blood:'B型 Rh阳性' },
+  { id:'10', bed:'10', name:'向思睿', gender:'男', age:9, days:4, group:'三组',
+    mrn:'2082174', admit:'2026-10-09 00:34', tel:'15736612239', doctor:'童瑾',
+    diag:'颞叶出血|蛛网膜下腔出血|颅骨骨折|闭合性颅脑损伤中型|多发性大脑挫裂伤|硬膜下血肿|创伤性蛛网膜下腔出血',
+    vent:true, pressureHigh:true, diet:'肠内营养', blood:'O型 Rh阳性' },
+  { id:'11', bed:'11', name:'刘从江', gender:'男', age:58, days:27, group:'二组',
+    mrn:'2072076', admit:'2026-09-15 12:55', tel:'13800001111', doctor:'陈晓东',
+    diag:'颈椎骨折伴脊髓损伤|颈椎间盘突出|高位截瘫',
+    pressureHigh:true, fallHigh:true, pipeHigh:true, nutritionHigh:true,
+    diet:'鼻饲饮食', blood:'A型 Rh阳性', tags:[{t:'长程',c:'mute'}] },
+  { id:'12', bed:'12', name:'张可超', gender:'男', age:51, days:24, group:'二组',
+    mrn:'2074243', admit:'2026-09-18 15:09', tel:'13800002222', doctor:'陈晓东',
+    diag:'重型颅脑损伤|颅内血肿清除术后|肺部感染',
+    vent:true, crrt:true, difficultAirway:true,
+    pressureHigh:true, fallHigh:true, nutritionHigh:true,
+    diet:'鼻饲饮食', blood:'AB型 Rh阴性', tags:[{t:'长程',c:'mute'}] },
+  { id:'13', bed:'13', name:'黄中政', gender:'男', age:66, days:2, group:'三组',
+    mrn:'2083167', admit:'2026-10-11 06:23', tel:'13800003333', doctor:'童瑾',
+    diag:'脑出血|高血压3级（极高危）|吸入性肺炎',
+    vent:true, pressureHigh:true, fallHigh:true,
+    diet:'糖尿病饮食', blood:'B型 Rh阳性',
+    tags:[{t:'转',c:'info'}] },
+  { id:'14', bed:'14', name:'吴国辉', gender:'男', age:72, days:42, group:'一组',
+    mrn:'2066048', admit:'2026-08-31 18:57', tel:'13800004444', doctor:'黄文其',
+    diag:'慢性阻塞性肺疾病急性加重|Ⅱ型呼吸衰竭|肺心病',
+    vent:true, ventMode:'PSV', pressureHigh:true, pipeHigh:true, nutritionHigh:true,
+    diet:'低盐饮食', blood:'O型 Rh阳性', tags:[{t:'长程',c:'mute'}] },
+  { id:'15', bed:'15', name:'夏照兰', gender:'女', age:63, days:18, group:'二组',
+    mrn:'2077091', admit:'2026-09-24 16:32', tel:'13800005555', doctor:'陈晓东',
+    diag:'创伤性休克|多发伤|腹腔积血|腹膜后血肿',
+    crrt:true, pressureHigh:true, fallHigh:true, nutritionHigh:true,
+    diet:'禁食', blood:'A型 Rh阳性', tags:[{t:'长程',c:'mute'}] },
+];
+
+const emptyBeds = ['08','21','28'];
+const todos = [
+  { cat:'待闭环危急值', level:'danger', bed:'04', text:'06:15 血钾 2.8 mmol/L（补钾医嘱待复查）' },
+  { cat:'外出检查', level:'info', bed:'01', text:'09:30 增强CT（需配转运呼吸机）' },
+  { cat:'拔管计划', level:'info', bed:'07', text:'计划脱机 SBT 试验' },
+  { cat:'管路预警', level:'warn', bed:'01', text:'人工气道留置 8 天（气切评估）' },
+  { cat:'管路预警', level:'warn', bed:'06', text:'尿管留置 9 天（CAUTI 评估）' },
+];
+const groupMeta = [
+  { key:'一组', name:'医疗一组', doctor:'黄文其、陈晓东' },
+  { key:'二组', name:'医疗二组', doctor:'童瑾、陈晓东' },
+  { key:'三组', name:'医疗三组', doctor:'童瑾' },
+];
+const stats = {
+  aux: [
+    ['管道高危',3],['营养高危',5],['VTE高危',4],
+    ['跌倒未评估',2],['压疮未评估',1],['重点关注',7],['跨班危急值',1],
+  ]
+};
+let openGroups = new Set(['一组']);
+
+let filter = 'all';
+let activeId = null;
+let drawerOpen = false;
+
+const grid = document.getElementById('grid');
+const drawer = document.getElementById('drawer');
+const drawerBody = document.getElementById('drawerBody');
+const toastEl = document.getElementById('toast');
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+function cardHtml(p) {
+  const { alert, soft } = buildTags(p);
+  const alertHtml = alert.map(t => `<span class="tag ${t.c}" title="${esc(t.t)}">${esc(t.t)}</span>`).join('');
+  const softHtml = soft.map(t => `<span class="tag ${t.c}" title="${esc(t.t)}">${esc(t.t)}</span>`).join('');
+  const tags = alertHtml + (softHtml ? `<span class="tag-soft-wrap">${softHtml}</span>` : '');
+  const g = p.gender === '女' ? 'female' : 'male';
+  const gTxt = p.gender === '女' ? '女' : '男';
+  const av = avatarSrc(p.age, p.gender === '女' ? 'Female' : 'Male');
+  const longStay = p.days >= 14;
+  const daysTitle = longStay
+    ? `ICU 住院已达 ${p.days} 天（阈值 14 天），晨会重点评估 MDT / 脱机与营养`
+    : `入科 ${p.days} 天`;
+  return `<article class="card ${activeId===p.id?'active':''}" data-id="${p.id}">
+    <header class="card-head">
+      <div class="bed">${esc(p.bed)}床</div>
+      <div class="name">${esc(p.name)}</div>
+      <div class="head-right">
+        <span class="pill-days" title="${esc(daysTitle)}">入科${p.days}天</span>
+        ${longStay ? `<span class="pill-days long" title="${esc(daysTitle)}">长程</span>` : ''}
+      </div>
+    </header>
+    <div class="card-body">
+      <div class="profile">
+        <img class="avatar" src="${av}" alt="" width="52" height="52" />
+        <div class="gender ${g}">${gTxt}</div>
+        <div class="age">${p.age}岁</div>
+      </div>
+      <div class="details">
+        <div class="meta-line"><span>住院号 <b>${esc(p.mrn)}</b></span><span title="${esc(p.admit)}">入科 <b>${esc((p.admit||'').slice(5, 16))}</b></span></div>
+        <div class="diag" title="${esc(p.diag)}">${esc(p.diag)}</div>
+        <div class="who-line"><b>${esc(p.doctor)}</b>${p.group ? ` · ${esc(p.group)}` : ''}</div>
+      </div>
+    </div>
+    <footer class="card-foot">${tags}</footer>
+  </article>`;
+}
+
+function buildTags(p) {
+  const alert = [];
+  const soft = [];
+  // —— 强预警（极克制）——
+  if (p.vent) alert.push({ t: p.ventMode ? `呼吸机·${p.ventMode}` : '呼吸机', c: 'alert-vent' });
+  if (p.crrt) alert.push({ t: 'CRRT', c: 'alert-crit' });
+  if (p.difficultAirway) alert.push({ t: '困难气道', c: 'alert-crit' });
+  if (p.vasoactive) alert.push({ t: p.vasoactive, c: 'alert-crit' });
+  // 仅高危才亮黄
+  if (p.pressureHigh) alert.push({ t: '压疮高危', c: 'alert-high' });
+  if (p.fallHigh) alert.push({ t: '跌倒高危', c: 'alert-high' });
+  // —— 次要属性：淡灰文字 ——
+  if (p.pipeHigh) soft.push({ t: '导管高危', c: 'soft' });
+  if (p.nutritionHigh) soft.push({ t: '营养', c: 'soft' });
+  if (p.vteHigh) soft.push({ t: 'VTE', c: 'soft' });
+  if (p.diet) {
+    const d = String(p.diet)
+      .replace('糖尿病饮食', '糖尿病').replace('低盐饮食', '低盐')
+      .replace('低蛋白饮食', '低蛋白').replace('肠内营养', '肠内')
+      .replace('鼻饲饮食', '鼻饲').replace('流质饮食', '流质');
+    soft.push({ t: d, c: 'soft' });
+  }
+  if (p.blood) {
+    const b = String(p.blood).replace(/\s*Rh阳性/, '+').replace(/\s*Rh阴性/, '-').replace('型', '');
+    soft.push({ t: b, c: 'soft' });
+  }
+  if (p.tags) {
+    for (const t of p.tags) {
+      if (t.t === '长程') continue;
+      soft.push({ t: t.t, c: 'mute' });
+    }
+  }
+  return { alert, soft };
+}
+
+function emptyHtml(n) {
+  return `<div class="empty-card">
+    <svg class="ghost-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <rect x="3" y="8" width="18" height="10" rx="2"/>
+      <path d="M3 12h18M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
+    </svg>
+    <div class="ghost-bed">${esc(n)}床</div>
+    <div class="ghost-text">备用空床</div>
+  </div>`;
+}
+
+function render() {
+  let list = patients.slice();
+  if (filter === 'new') list = list.filter(p => p.days === 0);
+  if (filter === 'long') list = list.filter(p => p.days >= 14);
+
+  if (filter === 'empty') {
+    grid.innerHTML = emptyBeds.map(emptyHtml).join('');
+    return;
+  }
+
+  const byBed = {};
+  list.forEach(p => { byBed[p.bed] = p; });
+  const beds = [...new Set([...list.map(p => p.bed), ...emptyBeds])]
+    .sort((a,b) => Number(a) - Number(b));
+  grid.innerHTML = beds.map(b => byBed[b] ? cardHtml(byBed[b]) : emptyHtml(b)).join('');
+
+  grid.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => pick(el.dataset.id));
+  });
+}
+
+function pick(id) {
+  activeId = id;
+  grid.querySelectorAll('.card').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+  openDrawer();
+  renderDrawer();
+}
+
+function openDrawer() {
+  drawerOpen = true;
+  drawer.classList.add('open');
+  document.getElementById('btnStats').classList.add('on');
+}
+function closeDrawer() {
+  drawerOpen = false;
+  drawer.classList.remove('open');
+  document.getElementById('btnStats').classList.remove('on');
+}
+
+function renderDrawer() {
+  const p = patients.find(x => x.id === activeId);
+  const pickHtml = p ? `
+    <div class="pick-card">
+      <div class="t">${esc(p.bed)}床 ${esc(p.name)}</div>
+      <div class="s">${esc(p.gender)}/${p.age}岁 · 入科${p.days}天 · ${esc(p.doctor)}</div>
+      <div class="d">${esc(p.diag)}</div>
+      <div class="mini-io">
+        <div class="cell"><div class="l">总入量</div><div class="v">1850<small>ml</small></div></div>
+        <div class="cell"><div class="l">总出量</div><div class="v">1620<small>ml</small></div></div>
+        <div class="cell"><div class="l">尿量</div><div class="v">780<small>ml</small></div></div>
+        <div class="cell bal-pos"><div class="l">净平衡</div><div class="v">+230<small>ml</small></div></div>
+      </div>
+    </div>` : `<div style="color:#7D7A75;font-size:12.5px;margin-bottom:12px">点击左侧患者卡或待办，此处显示该患者速览</div>`;
+
+  const groupHtml = groupMeta.map(g => {
+    const members = patients.filter(p => p.group === g.key)
+      .sort((a,b) => Number(a.bed) - Number(b.bed));
+    const vent = members.filter(p => p.vent || p.crrt).length;
+    const press = members.filter(p => p.pressureHigh).length;
+    const open = openGroups.has(g.key);
+    const items = members.map(p => {
+      const flags = [];
+      if (p.vent) flags.push('<span class="flag vent">机</span>');
+      if (p.crrt) flags.push('<span class="flag crrt">CRRT</span>');
+      if (p.difficultAirway) flags.push('<span class="flag air">气道</span>');
+      if (p.pressureHigh || p.fallHigh || p.pipeHigh) flags.push('<span class="flag risk">危</span>');
+      return `<div class="grp-item ${activeId===p.id?'active':''}" data-id="${p.id}" data-bed="${p.bed}">
+        <span class="b">${esc(p.bed)}床</span>
+        <span class="n">${esc(p.name)}</span>
+        <span class="m">${esc(p.doctor)}</span>
+        <span class="flags">${flags.join('')}</span>
+      </div>`;
+    }).join('');
+    return `<div class="grp ${open?'open':''}" data-g="${g.key}">
+      <div class="grp-head">
+        <span class="grp-chev"></span>
+        <div class="grp-main">
+          <div class="grp-title">${esc(g.name)}</div>
+          <div class="grp-doc">负责医生：${esc(g.doctor)}</div>
+        </div>
+        <div class="grp-num">
+          <b>${members.length}人</b>
+          <span class="sub">呼吸机${vent} · 压疮${press}</span>
+        </div>
+      </div>
+      <div class="grp-list">${items || '<div class="grp-item" style="cursor:default;color:#94A3B8">暂无患者</div>'}</div>
+    </div>`;
+  }).join('');
+
+  const auxHtml = stats.aux.map(([k,v]) =>
+    `<div class="stat-row"><span>${esc(k)}</span><b>${v}</b></div>`).join('');
+  const todoHtml = todos.map(t => `
+    <div class="todo" data-bed="${t.bed}">
+      <span class="cat ${t.level}">${esc(t.cat)}</span>
+      <div class="body"><b>${esc(t.bed)}床</b> ${esc(t.text)}</div>
+    </div>`).join('');
+
+  drawerBody.innerHTML = pickHtml + `
+    <div class="stat-block"><h3>医疗组一览（点组名展开明细）</h3>${groupHtml}</div>
+    <div class="stat-block"><h3>辅助指标</h3>${auxHtml}</div>
+    <div class="stat-block"><h3>今日交班重点</h3>${todoHtml}</div>
+  `;
+
+  drawerBody.querySelectorAll('.grp-head').forEach(el => {
+    el.addEventListener('click', () => {
+      const key = el.parentElement.dataset.g;
+      if (openGroups.has(key)) openGroups.delete(key);
+      else openGroups.add(key);
+      renderDrawer();
+    });
+  });
+  drawerBody.querySelectorAll('.grp-item[data-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      if (filter === 'empty' || filter === 'new' || filter === 'long') {
+        filter = 'all';
+        document.querySelectorAll('.chip-btn').forEach(b => b.classList.toggle('active', b.dataset.f === 'all'));
+        render();
+      }
+      pick(id);
+      const card = grid.querySelector(`[data-id="${id}"]`);
+      if (card) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    });
+  });
+
+  drawerBody.querySelectorAll('.todo').forEach(el => {
+    el.addEventListener('click', () => {
+      const hit = patients.find(x => x.bed === el.dataset.bed);
+      if (hit) {
+        if (filter === 'empty' || filter === 'new' || filter === 'long') {
+          // 切回全部以便定位
+          filter = 'all';
+          document.querySelectorAll('.chip-btn').forEach(b => b.classList.toggle('active', b.dataset.f === 'all'));
+          render();
+        }
+        pick(hit.id);
+        const card = grid.querySelector(`[data-id="${hit.id}"]`);
+        if (card) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
+      }
+    });
+  });
+}
+
+document.getElementById('btnStats').addEventListener('click', () => {
+  if (drawerOpen) closeDrawer(); else { openDrawer(); renderDrawer(); toast(drawerOpen ? '已打开统计栏' : '已收起统计栏'); }
+});
+document.getElementById('btnClose').addEventListener('click', () => { closeDrawer(); toast('已收起统计栏'); });
+document.getElementById('btnHandover').addEventListener('click', (e) => {
+  e.currentTarget.classList.toggle('on');
+  toast(e.currentTarget.classList.contains('on') ? '已进入交接模式（演示）' : '已退出交接模式');
+});
+document.getElementById('btnRefresh').addEventListener('click', () => toast('已刷新（演示数据）'));
+document.getElementById('btnFull').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+
+document.querySelectorAll('.kpi-item').forEach(el => {
+  const go = () => {
+    const f = el.dataset.filter;
+    if (f) {
+      filter = f;
+      document.querySelectorAll('.chip-btn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+      render();
+      toast(f === 'empty' ? '已筛选空床' : '已筛选新入科');
+    }
+    openDrawer();
+    renderDrawer();
+  };
+  el.addEventListener('click', go);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+});
+
+document.querySelectorAll('.chip-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filter = btn.dataset.f;
+    document.querySelectorAll('.chip-btn').forEach(b => b.classList.toggle('active', b === btn));
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>

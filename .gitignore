@@ -1,0 +1,27 @@
+# Build
+backend/target/
+frontend/dist/
+frontend/.angular/
+*.class
+*.jar
+
+# Local secrets / env
+backend/config/application.yml
+!backend/config/application.yml.example
+**/application-local.yml
+.env
+.env.*
+
+# IDE / tooling
+.idea/
+.vscode/
+*.iml
+.mimocode/
+.playwright-cli/
+_exportblock/
+*.zip
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db

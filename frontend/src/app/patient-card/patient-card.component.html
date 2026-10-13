@@ -1,0 +1,71 @@
+<div class="patient-card-container">
+  <div class="state-panel" *ngIf="!selectedDepartmentCode">
+    <div class="state-title">等待科室数据</div>
+    <div class="state-copy">正在获取当前科室的在科患者…</div>
+  </div>
+
+  <div class="state-panel" *ngIf="selectedDepartmentCode && loading && patients.length === 0">
+    <div class="state-title">正在加载患者</div>
+    <div class="state-copy">正在获取在科患者…</div>
+  </div>
+
+  <div class="state-panel error" *ngIf="errorMessage && patients.length === 0">
+    <div class="state-title">{{ errorMessage }}</div>
+    <div class="state-copy">请刷新页面重试</div>
+  </div>
+
+  <div class="cards-scroll" #cardsScroll
+       *ngIf="selectedDepartmentCode && patients.length > 0"
+       (mouseenter)="onCardsMouseEnter()"
+       (mousemove)="onCardsMouseMove()"
+       (mouseleave)="onCardsMouseLeave()">
+    <div class="patient-cards">
+      <div *ngFor="let patient of patients" class="patient-card" [class.empty-bed]="patient.isEmpty">
+        <div *ngIf="patient.isEmpty" class="empty-bed-card">
+          <div class="card-top">
+            <div class="bed-number">{{ patient.bedNumber }}床</div>
+          </div>
+          <div class="empty-bed-body">空床</div>
+        </div>
+
+        <div *ngIf="!patient.isEmpty" class="occupied-bed-card">
+          <div class="card-top">
+            <div class="bed-number">{{ patient.bedNumber }}床</div>
+            <div class="patient-name">{{ patient.name }}</div>
+            <div class="patient-days">入科{{ getAdmissionDays(patient.icuAdmissionTime) }}天</div>
+          </div>
+
+          <div class="card-middle">
+            <div class="gender-age-stack" aria-label="性别与年龄">
+              <img *ngIf="patient.avatarSrc" class="avatar-img" [src]="patient.avatarSrc" alt="患者头像" />
+              <div class="gender-badge" [class.male]="patient.gender === 'Male'" [class.female]="patient.gender !== 'Male'">
+                {{ patient.gender === 'Male' ? '男' : '女' }}
+              </div>
+              <div class="age-text">{{ patient.age }}岁</div>
+            </div>
+
+            <div class="patient-details">
+              <div class="detail-item"><span class="detail-label">诊疗号:</span>{{ patient.mrn }}</div>
+              <div class="detail-item nowrap"><span class="detail-label">入科时间:</span>{{ formatDateTime(patient.icuAdmissionTime) }}</div>
+              <div class="detail-item diagnosis" [attr.data-tooltip]="patient.clinicalDiagnosis || ''">
+                <span class="detail-label">目前诊断:</span>{{ patient.clinicalDiagnosis }}
+              </div>
+              <div class="detail-item"><span class="detail-label">电话:</span>{{ patient.tel }}</div>
+              <div class="detail-item"><span class="detail-label">责任医生:</span>{{ patient.bedDoctor }}</div>
+            </div>
+          </div>
+
+          <div class="card-footer" aria-label="患者标识">
+            <span *ngIf="patient.newAdmission" class="tag tag-new" title="当前业务日08:00后新入科">新</span>
+            <span *ngIf="patient.surgeryAdmission" class="tag tag-info" title="入科类型：手术">术</span>
+            <span *ngIf="patient.vteRisk" class="tag" [ngClass]="riskClass(patient.vteRisk)" [title]="riskTooltip('VTE', patient.vteRisk)">VTE</span>
+            <span *ngIf="patient.pipeRisk" class="tag" [ngClass]="riskClass(patient.pipeRisk)" [title]="riskTooltip('管道风险', patient.pipeRisk)">管</span>
+            <span *ngIf="patient.pressureDamageRisk" class="tag" [ngClass]="riskClass(patient.pressureDamageRisk)" [title]="riskTooltip('压力性损伤风险', patient.pressureDamageRisk)">疮</span>
+            <span *ngIf="patient.nutritionRisk" class="tag" [ngClass]="riskClass(patient.nutritionRisk)" [title]="riskTooltip('营养风险', patient.nutritionRisk)">养</span>
+            <span *ngIf="patient.transferIn" class="tag tag-info" title="入科类型包含转入">转</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

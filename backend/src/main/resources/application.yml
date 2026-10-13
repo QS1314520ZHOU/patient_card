@@ -1,0 +1,88 @@
+# 业务默认值；数据库连接请配置在JAR同级 config/application.yml。
+vte:
+  enabled: true
+risk:
+  pressure:
+    high-max: 12
+    medium-max: 14
+  nutrition:
+    medium-min: 3
+    high-min: 5
+  # 跌倒/坠床（如 Morse）：分值越高风险越高，阈值按院内量表确认
+  fall:
+    medium-min: 25
+    high-min: 45
+  score-types:
+    # score 集合中各评估的 scoreType（本地库实际使用 patientFallDangerFactor；院内若用其他量表在此调整）
+    fall: patientFallDangerFactor
+    # 导管风险（total>5 高危）；生产若用 pipeRiskMonitorScoreMS 在此改
+    pipe: pipeRiskMonitorScoreMS
+    # 压力性损伤类型按优先级取第一个有记录的（兼容生产库命名与本地 Braden；bradenScore total<12 高危）
+    pressure: bradenScore,pressureDamageScore,bradenNurseScore
+    rass: rass
+    gcs: gcsScore
+    sofa: sofa
+    apache: apacheII
+
+mongo:
+  collections:
+    patient: patient
+    score: score
+    # 呼吸机绑定关系（pid 关联 patient._id；unBindTime 为空=未解绑）
+    deviceBind: deviceBind
+    # 床旁采集（code=param_HuXiMoShi，strVal=呼吸模式，pid 关联患者；固定呼吸机不进 deviceBind，靠采集识别）
+    bedside: bedside
+  # DataCenter 第二库（VI_ICU_ZYYZ 隔离/抢救医嘱）；database 留空则相关角标降级为不可用
+  # host/port/username/password 缺省跟随主库 mongo.*；authSource 缺省为本库 database
+  # DataCenter 与 SmartCare 不同集群或不同账号时，在 config/application.yml 里显式覆盖
+  center:
+    database: ""
+
+# 科室概览 / 大交班大屏
+overview:
+  refresh-seconds: 60
+  snapshot-ttl-seconds: 600
+  ventilator:
+    # 解绑时间字段（本地库实际字段为 unBindTime，注意大小写）
+    unbind-field: unBindTime
+    # 设备类型过滤：deviceBind 含 vent/crrt/monitor，只统计呼吸机
+    type-field: type
+    type-values: vent
+    # 呼吸机模式参数码（bedside.strVal，按优先级取最新非空值）
+    mode-codes: param_HuXiMoShi,param_vent_mode
+    # 固定呼吸机判定窗：bedside 近 N 小时有 param_HuXiMoShi 采集即计为在用（无 deviceBind 记录）
+    capture-window-hours: 24
+  departure:
+    # 离科事件时间字段（按优先级取第一个非空值）
+    time-fields: icuDischargeTime,dischargeTime
+  # 高级脏器支持（tubeExe.type，endTime 为空 = 在用）
+  organ-support-types: ECMO,IABP
+  support:
+    # deviceBind 中 CRRT 类型值
+    crrt-values: crrt
+  tube:
+    airway-types: 气管插管,气切套管
+    cvc-types: 中心静脉导管,PICC管
+    urine-types: 尿管
+    airway-warn-days: 7
+    airway-crit-days: 14
+    cvc-crit-days: 14
+    urine-warn-days: 7
+  vasoactive:
+    # 微泵在用（drugExe.status=working）且药名包含任一关键词 → 血管活性药角标
+    keywords: 去甲肾上腺素,去甲,垂体后叶素,多巴胺,多巴酚丁胺,肾上腺素,血管加压素,去氧肾上腺素,异丙肾上腺素,米力农,硝普钠,硝酸甘油,乌拉地尔,尼卡地平,酚妥拉明,艾司洛尔,拉贝洛尔
+  io:
+    # 兜底码表；实际优先读 configLiquidBalance（按科室）
+    # 日汇总：param_in_day / param_out_day（有则优先用，避免与分项重复累加）
+    day-total-in-code: param_in_day
+    day-total-out-code: param_out_day
+    in-codes: param_kouFu,param_biSi,param_YaoYeti_in_hour,param_YaoStomach_in_hour,param_YaoOther_in_hour,param_food_shiWu,param_饮食,param_YaoShuXue_in_hour,param_YaoSpecial_in_hour
+    out-codes: param_niaoLiang,param_daBianAmount,param_weiyeliang,param_outuwuliang,param_ylg,param_chaoLvLiang,param_恶露,param_咯血,param_渗液
+    urine-code: param_niaoLiang
+  night:
+    # 夜班窗口兜底（实际优先读 banCiInfoList 跨午夜班次）
+    start-hour: 20
+    end-hour: 8
+  rescue-keywords: 除颤,心肺复苏,抢救
+  los:
+    long-stay-days: 14
