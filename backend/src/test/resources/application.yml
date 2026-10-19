@@ -1,0 +1,15 @@
+# 仅测试用：提供最小占位配置，让 contextLoads 能启动 Spring 上下文
+# （MongoClient / HikariCP 创建时不会真正连库）
+mongo:
+  host: 127.0.0.1
+  port: 27017
+  database: patient_card_test
+  username: ""
+  password: ""
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/patient_card_test
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
