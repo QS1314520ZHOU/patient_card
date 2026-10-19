@@ -14,6 +14,7 @@
   let beds = [];
   let patients = [];
   let filter = 'all';
+  let groupFilter = '';
   let activeId = null;
   let drawerOpen = false;
   let handoverMode = false;
@@ -178,13 +179,9 @@
   }
 
   function bloodLabel(p) {
-    const type = (p.bloodType || '').trim();
-    const rh = (p.bloodRH || '').trim();
-    if (!type && !rh) return '';
-    let t = type.replace('型', '');
-    if (/Rh阳性|\+|阳性/i.test(rh)) t += '+';
-    else if (/Rh阴性|-|阴性/i.test(rh)) t += '-';
-    return t;
+    // 血型不在卡片展示（现场要求取消）
+    void p;
+    return '';
   }
 
   function dietLabel(diet) {
@@ -209,8 +206,6 @@
     if (isHigh(p.nutritionRisk)) soft.push({ t: '营养', c: 'soft' });
     if (isHigh(p.vteRisk)) soft.push({ t: 'VTE', c: 'soft' });
     if (p.diet) soft.push({ t: dietLabel(p.diet), c: 'soft' });
-    const blood = bloodLabel(p);
-    if (blood) soft.push({ t: blood, c: 'soft' });
     if (p.surgeryAdmission) soft.push({ t: '术', c: 'mute' });
     if (p.transferIn) soft.push({ t: '转', c: 'mute' });
     return { alert, soft };
@@ -222,6 +217,9 @@
 
   function filteredPatients() {
     let list = patients.slice();
+    if (groupFilter) {
+      list = list.filter((p) => groupKey(p) === groupFilter);
+    }
     if (filter === 'new') list = list.filter((p) => !!p.newAdmission);
     if (filter === 'long') list = list.filter((p) => icuDays(p) >= 14);
     if (filter === 'vent') list = list.filter((p) => p.ventilator);
@@ -281,9 +279,38 @@
     </div>`;
   }
 
+  function renderGroupFilter() {
+    const box = document.getElementById('groupFilter');
+    if (!box) return;
+    const counts = new Map();
+    patients.forEach((p) => {
+      const k = groupKey(p);
+      counts.set(k, (counts.get(k) || 0) + 1);
+    });
+    const keys = [...counts.keys()].sort((a, b) => {
+      if (a === '未分组') return 1;
+      if (b === '未分组') return -1;
+      return a.localeCompare(b, 'zh');
+    });
+    box.innerHTML = [
+      `<button class="chip-btn ${groupFilter ? '' : 'active'}" type="button" data-g="">全部</button>`,
+      ...keys.map((k) =>
+        `<button class="chip-btn ${groupFilter === k ? 'active' : ''}" type="button" data-g="${esc(k)}" title="${esc(k)} ${counts.get(k)}人">${esc(k)}<em>${counts.get(k)}</em></button>`
+      ),
+    ].join('');
+    box.querySelectorAll('.chip-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        groupFilter = btn.dataset.g || '';
+        renderGroupFilter();
+        renderGrid();
+        renderDrawer();
+      });
+    });
+  }
+
   function renderGrid() {
-    // 仅「全部」才铺空床；筛选时只显示命中患者，避免整屏备用空床
-    if (filter === 'empty') {
+    // 仅无医疗组/条件筛选的「全部」才铺空床
+    if (filter === 'empty' && !groupFilter) {
       const emptyAll = emptyBedNames();
       grid.innerHTML = emptyAll.length
         ? emptyAll.map((n) => emptyHtml(n)).join('')
@@ -292,25 +319,16 @@
     }
 
     const list = filteredPatients();
-    if (filter !== 'all') {
-      // 筛选态：不展示空床，只展示命中患者
-      if (!list.length) {
-        grid.innerHTML = '<div style="padding:40px;text-align:center;color:#7D7A75">当前筛选条件下无患者</div>';
-        return;
-      }
-      const rows = list
-        .map((p) => ({ key: p.bedNumber || p.hisBed || '', html: cardHtml(p) }))
-        .sort((a, b) => bedSort(a.key) - bedSort(b.key));
-      grid.innerHTML = rows.map((r) => r.html).join('');
-      bindCards();
+    const showEmpty = filter === 'all' && !groupFilter;
+    if (!list.length && !showEmpty) {
+      grid.innerHTML = '<div style="padding:40px;text-align:center;color:#7D7A75">当前筛选条件下无患者</div>';
       return;
     }
 
-    // 全部：患者 + 真正未占用的空床
-    const occupied = new Set(patients.map((p) => bedKey(p.hisBed)).filter(Boolean));
-    const emptyNames = emptyBedNames(occupied);
+    const occupied = new Set(list.map((p) => bedKey(p.hisBed)).filter(Boolean));
+    const emptyNames = showEmpty ? emptyBedNames() : [];
     const rows = [
-      ...patients.map((p) => ({ key: p.bedNumber || p.hisBed || '', html: cardHtml(p) })),
+      ...list.map((p) => ({ key: p.bedNumber || p.hisBed || '', html: cardHtml(p) })),
       ...emptyNames.map((n) => ({ key: n, html: emptyHtml(n) })),
     ].sort((a, b) => bedSort(a.key) - bedSort(b.key));
     if (!rows.length) {
@@ -360,9 +378,11 @@
     // 从抽屉跳转时，若当前筛选看不到该患者则回到全部
     if (!opts || opts.ensureVisible) {
       const p = patients.find((x) => x.id === id);
-      if (p && filter !== 'all' && filter !== 'empty' && !filteredPatients().some((x) => x.id === id)) {
+      if (p && !filteredPatients().some((x) => x.id === id)) {
         filter = 'all';
-        document.querySelectorAll('.chip-btn').forEach((b) => b.classList.toggle('active', b.dataset.f === 'all'));
+        groupFilter = '';
+        document.querySelectorAll('.chip-btn[data-f]').forEach((b) => b.classList.toggle('active', b.dataset.f === 'all'));
+        renderGroupFilter();
         renderGrid();
       }
     }
@@ -474,6 +494,7 @@
         activeId = null;
       }
       renderKpi();
+      renderGroupFilter();
       renderGrid();
       hideState();
       if (activeId) renderDrawer();
@@ -519,17 +540,17 @@
       const f = el.dataset.filter;
       if (f) {
         filter = f;
-        document.querySelectorAll('.chip-btn').forEach((b) => b.classList.toggle('active', b.dataset.f === f));
+        document.querySelectorAll('.chip-btn[data-f]').forEach((b) => b.classList.toggle('active', b.dataset.f === f));
         renderGrid();
       }
       openDrawer();
       renderDrawer();
     });
   });
-  document.querySelectorAll('.chip-btn').forEach((btn) => {
+  document.querySelectorAll('.chip-btn[data-f]').forEach((btn) => {
     btn.addEventListener('click', () => {
       filter = btn.dataset.f;
-      document.querySelectorAll('.chip-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.chip-btn[data-f]').forEach((b) => b.classList.toggle('active', b === btn));
       renderGrid();
     });
   });

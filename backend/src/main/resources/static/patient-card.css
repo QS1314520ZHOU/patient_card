@@ -51,12 +51,19 @@ body {
 .kpi-item .lab { color: var(--ink3); font-size: 12px; }
 .kpi-item .val { font-size: 16px; font-weight: 700; color: var(--ink); }
 .kpi-item .val em { font-style: normal; font-size: 12px; font-weight: 400; color: var(--ink3); }
-.kpi-tools { margin-left: auto; display: flex; gap: 6px; padding-left: 12px; }
+.kpi-tools { margin-left: auto; display: flex; gap: 6px; padding-left: 12px; align-items: center; flex-wrap: wrap; }
+.tool-label { color: var(--ink3); font-size: 12px; white-space: nowrap; }
+.tool-sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; }
+.group-filter { display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .chip-btn {
   border: 1px solid var(--line); background: #FBFAF9; border-radius: 999px;
   padding: 4px 12px; font-size: 12px; color: var(--ink2); cursor: pointer;
 }
+.chip-btn em {
+  font-style: normal; font-weight: 700; margin-left: 4px; font-size: 11px; opacity: .75;
+}
 .chip-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip-btn.active em { opacity: 1; }
 
 .main { flex: 1; display: flex; min-height: 0; }
 .content { flex: 1; overflow: auto; padding: 14px 16px 18px; }

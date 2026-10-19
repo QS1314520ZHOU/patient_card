@@ -27,6 +27,11 @@
       <div class="kpi-item" role="button" tabindex="0" data-filter="pressure"><span class="lab">压疮高</span><span class="val" id="kpiPressure">—</span></div>
       <div class="kpi-item" role="button" tabindex="0" data-filter="new"><span class="lab">新收</span><span class="val" id="kpiNew">—</span></div>
       <div class="kpi-tools">
+        <span class="tool-label">医疗组</span>
+        <div id="groupFilter" class="group-filter" role="group" aria-label="医疗组筛选">
+          <button class="chip-btn active" type="button" data-g="">全部</button>
+        </div>
+        <span class="tool-sep"></span>
         <button class="chip-btn active" type="button" data-f="all">全部</button>
         <button class="chip-btn" type="button" data-f="new">新入科</button>
         <button class="chip-btn" type="button" data-f="long">长程</button>
@@ -49,7 +54,7 @@
     </div>
 
     <div class="hint">
-      <span>强预警才有色块 · 饮食/血型为灰字 · 诊断严格 2 行</span>
+      <span>强预警才有色块 · 医疗组可顶部筛选 · 诊断严格 2 行</span>
       <span class="right">本屏用于交班辅助，非床旁实时监护</span>
     </div>
   </div>
