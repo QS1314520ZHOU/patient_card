@@ -319,17 +319,19 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
   align-content: center;
   gap: 3px 3px;
   row-gap: 4px;
-  padding: 7px 8px 2px;
+  padding: 7px 8px 7px;
   min-width: 0;
+  background: #5392FF;
+  color: #fff;
 }
 .p-bed {
   flex: none;
   font-size: 16px;
   font-weight: 700;
   line-height: 1.25;
-  color: var(--info-tx);
-  background: var(--info-bg);
-  border: 1px solid var(--info-bd);
+  color: #fff;
+  background: rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, .35);
   border-radius: 5px;
   padding: 0 4px;
 }
@@ -338,13 +340,13 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
 .p-name {
   font-size: 15px;
   font-weight: 500;
-  color: var(--ink);
+  color: #fff;
   max-width: 6.5em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.p-who { font-size: 11px; color: var(--ink-4); white-space: nowrap; flex: none; }
+.p-who { font-size: 11px; color: rgba(255, 255, 255, .85); white-space: nowrap; flex: none; }
 /* 右侧胶囊在空间不足时优先压缩（保姓名完整），单枚胶囊内省略 */
 .p-head-right {
   margin-left: auto;
@@ -373,6 +375,10 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
   border: 1px solid transparent;
   white-space: nowrap;
 }
+.p-head .pill-iso { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .4); color: #fff; font-weight: 500; }
+.p-head .pill-days { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .3); color: #fff; }
+.p-head .pill-days.long { background: #FDE68A; border-color: #FCD34D; color: #7C2D12; font-weight: 500; }
+/* 其它区域胶囊保持原色（非头部） */
 .pill-iso { background: var(--iso-bg); border-color: var(--iso-bd); color: var(--iso-tx); font-weight: 500; }
 .pill-days { background: var(--mute-bg); border-color: var(--mute-bd); color: var(--mute-tx); }
 .pill-days.long { background: var(--warn-bg); border-color: var(--warn-bd); color: var(--warn-tx); font-weight: 500; }

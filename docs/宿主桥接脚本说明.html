@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>宿主桥接脚本说明</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; margin: 40px; line-height: 1.7; color: #1f2937; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; margin-top: 28px; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow: auto; font-size: 13px; line-height: 1.5; }
+    code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+    .note { background: #fff7ed; border: 1px solid #fdba74; padding: 12px 16px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>宿主桥接脚本（跨域选中患者）</h1>
+  <p class="note">
+    科室概览 iframe 与宿主不同端口（如 18088 vs 60000）时属于跨域，
+    无法直接双击宿主病人列表。需要在宿主页注入下面脚本，
+    监听 <code>SmartCareNavigate</code> 消息并切换当前患者后再打开病情概览。
+  </p>
+
+  <h2>用法（最简）</h2>
+  <ol>
+    <li>确认科室概览服务已部署（如 <code>http://192.168.31.167:18088/</code>）。</li>
+    <li>在宿主 <code>index.html</code> 的 <code>&lt;/body&gt;</code> 前加入一行（script 标签不需要 CORS）：<br>
+      <code>&lt;script src="http://192.168.31.167:18088/patient-nav-bridge.js"&gt;&lt;/script&gt;</code><br>
+      端口/地址改成你实际的概览服务地址。
+    </li>
+    <li>强制刷新宿主页面（Ctrl+F5）后，科室概览里点任意床卡片即可切换到对应患者的病情概览。</li>
+  </ol>
+  <p class="note">也可把下方脚本拷到宿主静态目录后用相对路径引用，效果相同。脚本会在宿主页面上下文中运行，从而能双击选中病人并切换 currentPatient。</p>
+
+  <h2>脚本内容</h2>
+  <pre id="code">...</pre>
+
+  <script type="text/plain" id="bridge-src">
+(function () {
+  'use strict';
+  var REVIEW_HASH = '#/main/doctor/diagnosis-analysis/patient-review';
+  var ONLINE_HASH = '#/main/patient/patient-list/online-patient';
+
+  function matchRow(row, keys) {
+    var t = row.textContent || '';
+    if (keys.mrn && t.indexOf(keys.mrn) >= 0) return true;
+    if (keys.name && t.indexOf(keys.name) >= 0) return true;
+    if (keys.id && t.indexOf(keys.id) >= 0) return true;
+    if (keys.bed) {
+      var bedNum = String(keys.bed).replace(/^0+/, '') || '0';
+      var re = new RegExp('(^|\\D)' + bedNum + '(\\D|$)');
+      if (re.test(t)) return true;
+    }
+    return false;
+  }
+
+  function findRow(keys) {
+    var rows = document.querySelectorAll('tbody tr');
+    for (var i = 0; i < rows.length; i++) {
+      if (matchRow(rows[i], keys)) return rows[i];
+    }
+    return null;
+  }
+
+  function selectPatient(keys, done) {
+    var row = findRow(keys);
+    if (row) {
+      row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window }));
+      setTimeout(done, 400);
+      return;
+    }
+    // 当前页没有列表则先切到在线病人
+    var hash = location.hash || '';
+    if (hash.indexOf('online-patient') < 0 && hash.indexOf('patient-list') < 0) {
+      location.hash = ONLINE_HASH;
+      var t0 = Date.now();
+      var timer = setInterval(function () {
+        var r = findRow(keys);
+        if (r) {
+          clearInterval(timer);
+          r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window }));
+          setTimeout(done, 400);
+        } else if (Date.now() - t0 > 4000) {
+          clearInterval(timer);
+          done();
+        }
+      }, 200);
+      return;
+    }
+    done();
+  }
+
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.type !== 'SmartCareNavigate' || d.action !== 'openPatientReview') return;
+    var keys = { id: d.patientId, mrn: d.mrn, bed: d.bed, name: d.name };
+    selectPatient(keys, function () {
+      location.hash = REVIEW_HASH;
+    });
+  });
+
+  // 可选：页面加载后广播就绪，便于 iframe 检测
+  try {
+    window.postMessage({ type: 'SmartCareNavigateReady' }, '*');
+  } catch (err) { /* ignore */ }
+})();
+  </script>
+  <script>
+    document.getElementById('code').textContent = document.getElementById('bridge-src').textContent.trim();
+  </script>
+</body>
+</html>

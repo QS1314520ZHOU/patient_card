@@ -347,9 +347,226 @@
       .filter(Boolean);
   }
 
+  /** 宿主「医生-诊断分析-病情概览」路由（相对 hash，不写死主机地址） */
+  const PATIENT_REVIEW_HASH = '#/main/doctor/diagnosis-analysis/patient-review';
+  const ONLINE_PATIENT_HASH = '#/main/patient/patient-list/online-patient';
+
+  /**
+   * 动态解析宿主站点 Origin（iframe 内无法假定固定 IP/端口）。
+   * 优先：顶层窗口（若同源可读）→ document.referrer → 当前页 origin。
+   */
+  function resolveHostOrigin() {
+    try {
+      if (window.top && window.top !== window) {
+        const origin = window.top.location && window.top.location.origin;
+        if (origin && origin !== 'null') return origin;
+      }
+    } catch (_) { /* cross-origin */ }
+    try {
+      if (document.referrer) {
+        const origin = new URL(document.referrer).origin;
+        if (origin && origin !== 'null') return origin;
+      }
+    } catch (_) { /* invalid referrer */ }
+    try {
+      const origin = window.location.origin;
+      if (origin && origin !== 'null' && origin !== 'http://localhost:18088') return origin;
+    } catch (_) { /* ignore */ }
+    return '';
+  }
+
+  function hostUrl(hash) {
+    const origin = resolveHostOrigin();
+    return origin ? origin + '/' + hash : hash;
+  }
+
+  function navigateTop(hashOrUrl) {
+    const url = hashOrUrl.charAt(0) === '#'
+      ? hostUrl(hashOrUrl)
+      : hashOrUrl;
+    try {
+      if (window.top && window.top !== window) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch (_) {
+      try {
+        if (window.top) window.top.location.hash = hashOrUrl.charAt(0) === '#' ? hashOrUrl : PATIENT_REVIEW_HASH;
+        else window.location.hash = hashOrUrl.charAt(0) === '#' ? hashOrUrl : PATIENT_REVIEW_HASH;
+      } catch (__) { /* ignore */ }
+    }
+  }
+
+  function patientKeys(patient) {
+    return {
+      id: String(patient.id || ''),
+      mrn: String(patient.mrn || ''),
+      name: String(patient.name || ''),
+      bed: String(patient.bedNumber || patient.hisBed || patient.showBed || ''),
+    };
+  }
+
+  function rowMatchesPatient(row, keys) {
+    const t = row.textContent || '';
+    if (keys.mrn && t.indexOf(keys.mrn) >= 0) return true;
+    if (keys.name && t.indexOf(keys.name) >= 0) return true;
+    if (keys.id && t.indexOf(keys.id) >= 0) return true;
+    // 床号需整格匹配，避免 01 误匹配 010/101
+    if (keys.bed) {
+      const bedNum = keys.bed.replace(/^0+/, '') || '0';
+      const re = new RegExp('(^|\\D)' + bedNum + '(\\D|$)');
+      if (re.test(t)) return true;
+    }
+    return false;
+  }
+
+  function trySelectInTop(patient) {
+    try {
+      if (!window.top || window.top === window) return false;
+      const doc = window.top.document;
+      if (!doc) return false;
+      const keys = patientKeys(patient);
+      const rows = Array.prototype.slice.call(doc.querySelectorAll('tbody tr'));
+      if (!rows.length) return false;
+      const row = rows.find((r) => rowMatchesPatient(r, keys));
+      if (!row) return false;
+      row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window.top }));
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window.top }));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function waitForTopPatientSelected(patient, timeoutMs) {
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const tick = () => {
+        let ok = false;
+        try {
+          if (window.top && window.top !== window) {
+            const hash = String((window.top.location && window.top.location.hash) || '');
+            // 双击选人后宿主通常切到 execute-drug 等患者页
+            if (hash.indexOf('execute-drug') >= 0 || hash.indexOf('patient-review') >= 0) ok = true;
+          }
+        } catch (_) { /* cross-origin mid-way */ }
+        if (ok || Date.now() - started >= timeoutMs) {
+          resolve(ok);
+          return;
+        }
+        setTimeout(tick, 150);
+      };
+      tick();
+    });
+  }
+
+  /** 同源：通过宿主「医生→病情概览」菜单打开新页签 */
+  function openReviewTabViaMenuInTop() {
+    try {
+      if (!window.top || window.top === window) return false;
+      const doc = window.top.document;
+      if (!doc) return false;
+      const mouseClick = (el) => {
+        const r = el.getBoundingClientRect();
+        const opts = {
+          bubbles: true, cancelable: true, view: window.top,
+          clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, button: 0,
+        };
+        ['pointerover', 'mouseover', 'mouseenter', 'mousemove', 'mousedown', 'mouseup', 'click']
+          .forEach((t) => el.dispatchEvent(new MouseEvent(t, opts)));
+      };
+      const findTopMenuAnchor = (name) => {
+        const anchors = doc.querySelectorAll('a');
+        for (let i = 0; i < anchors.length; i++) {
+          const a = anchors[i];
+          if ((a.textContent || '').trim() !== name) continue;
+          const r = a.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0 && r.top < 50 && r.top >= 0) return a;
+        }
+        return null;
+      };
+      const findVisibleLink = (text) => {
+        const links = doc.querySelectorAll('a.ellipsis, a');
+        for (let i = 0; i < links.length; i++) {
+          if ((links[i].textContent || '').trim() === text) {
+            const r = links[i].getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return links[i];
+          }
+        }
+        return null;
+      };
+      const doctor = findTopMenuAnchor('医生');
+      if (doctor) mouseClick(doctor);
+      setTimeout(() => {
+        const link = findVisibleLink('病情概览');
+        if (link) { mouseClick(link); return; }
+        const doctor2 = findTopMenuAnchor('医生');
+        if (doctor2) mouseClick(doctor2);
+        setTimeout(() => {
+          const link2 = findVisibleLink('病情概览');
+          if (link2) mouseClick(link2);
+        }, 800);
+      }, 800);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * 点击患者卡：
+   * 1) postMessage 通知宿主桥（桥负责选人 + 打开病情概览新页签）
+   * 2) 同源无桥时：双击选人后走宿主菜单打开新页签
+   */
+  async function openPatientReview(patient) {
+    if (!patient) return;
+    const keys = patientKeys(patient);
+
+    const payload = {
+      type: 'SmartCareNavigate',
+      action: 'openPatientReview',
+      route: PATIENT_REVIEW_HASH,
+      patientId: keys.id,
+      mrn: keys.mrn,
+      bed: keys.bed,
+      name: keys.name,
+    };
+
+    const inIframe = window.top && window.top !== window;
+    try {
+      if (inIframe) {
+        window.top.postMessage(payload, '*');
+        window.parent.postMessage(payload, '*');
+      }
+    } catch (_) { /* ignore */ }
+
+    // iframe 内：优先交给宿主桥（选人 + 开新页签），本页不抢 hash
+    if (inIframe) {
+      await new Promise((r) => setTimeout(r, 2500));
+      return;
+    }
+
+    // 非 iframe（直接打开本页）：同源选人后用菜单开新页签
+    if (trySelectInTop(patient)) {
+      await waitForTopPatientSelected(patient, 2500);
+      if (openReviewTabViaMenuInTop()) {
+        await new Promise((r) => setTimeout(r, 1200));
+        return;
+      }
+    }
+
+    navigateTop(PATIENT_REVIEW_HASH);
+  }
+
   function bindCards() {
     grid.querySelectorAll('.card').forEach((el) => {
-      el.addEventListener('click', () => pick(el.dataset.id));
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const p = patients.find((x) => x.id === id);
+        pick(id);
+        openPatientReview(p);
+      });
     });
   }
 
