@@ -128,12 +128,15 @@
     return Math.max(0, age);
   }
 
+  /** 入科天数：自然日含当天，当天入科 = 1 天 */
   function icuDays(p) {
     const t = p.icuAdmissionTime || p.admissionTime;
-    if (!t) return 0;
+    if (!t) return 1;
     const d = new Date(t);
-    if (Number.isNaN(d.getTime())) return 0;
-    return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+    if (Number.isNaN(d.getTime())) return 1;
+    const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    const diff = Math.floor((startOfDay(new Date()) - startOfDay(d)) / 86400000);
+    return Math.max(1, diff + 1);
   }
 
   function fmtShort(value) {
@@ -194,14 +197,27 @@
       .replace('流质饮食', '流质');
   }
 
+  function isolationTag(raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return null;
+    if (/空气/.test(s)) return { t: '空气隔离', c: 'iso-air', title: '隔离医嘱：' + s };
+    if (/飞沫/.test(s)) return { t: '飞沫隔离', c: 'iso-droplet', title: '隔离医嘱：' + s };
+    if (/保护/.test(s)) return { t: '保护隔离', c: 'iso-protect', title: '隔离医嘱：' + s };
+    if (/接触|严密/.test(s)) return { t: '接触隔离', c: 'iso-contact', title: '隔离医嘱：' + s };
+    if (/隔离/.test(s)) return { t: '隔离', c: 'iso-other', title: '隔离医嘱：' + s };
+    return null;
+  }
+
   function buildTags(p) {
     const alert = [];
     const soft = [];
     if (p.ventilator) alert.push({ t: '呼吸机', c: 'alert-vent' });
     if (p.crrt) alert.push({ t: 'CRRT', c: 'alert-crit' });
     if (p.difficultAirway) alert.push({ t: '困难气道', c: 'alert-crit' });
+    const iso = isolationTag(p.isolation);
+    if (iso) soft.push(iso);
     if (isHigh(p.pressureDamageRisk)) alert.push({ t: '压疮高危', c: 'alert-high' });
-    if (isHigh(p.fallRisk)) alert.push({ t: '跌倒高危', c: 'alert-high' });
+    if (isHigh(p.fallRisk)) alert.push({ t: '跌倒高危', c: 'alert-fall' });
     if (isHigh(p.pipeRisk)) soft.push({ t: '导管高危', c: 'soft' });
     if (isHigh(p.nutritionRisk)) soft.push({ t: '营养', c: 'soft' });
     if (isHigh(p.vteRisk)) soft.push({ t: 'VTE', c: 'soft' });
@@ -230,8 +246,8 @@
 
   function cardHtml(p) {
     const { alert, soft } = buildTags(p);
-    const alertHtml = alert.map((t) => `<span class="tag ${t.c}" title="${esc(t.t)}">${esc(t.t)}</span>`).join('');
-    const softHtml = soft.map((t) => `<span class="tag ${t.c}" title="${esc(t.t)}">${esc(t.t)}</span>`).join('');
+    const alertHtml = alert.map((t) => `<span class="tag ${t.c}" title="${esc(t.title || t.t)}">${esc(t.t)}</span>`).join('');
+    const softHtml = soft.map((t) => `<span class="tag ${t.c}" title="${esc(t.title || t.t)}">${esc(t.t)}</span>`).join('');
     const age = ageOf(p.birthday);
     const gender = p.gender === 'Male' || p.gender === '男' || p.gender === '1' || p.gender === 'M' ? '男' : '女';
     const gCls = gender === '男' ? 'male' : 'female';
@@ -279,6 +295,21 @@
     </div>`;
   }
 
+  /** 医疗组按 一组→二组→三组… 排序，未分组垫底（localeCompare 会按拼音把二/三排在前） */
+  function compareGroup(a, b) {
+    if (a === '未分组') return 1;
+    if (b === '未分组') return -1;
+    const num = (s) => {
+      const m = String(s).match(/([一二三四五六七八九十]+)/);
+      if (!m) return 99;
+      const map = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+      return map[m[1]] || 99;
+    };
+    const d = num(a) - num(b);
+    if (d !== 0) return d;
+    return String(a).localeCompare(String(b), 'zh');
+  }
+
   function renderGroupFilter() {
     const box = document.getElementById('groupFilter');
     if (!box) return;
@@ -287,11 +318,7 @@
       const k = groupKey(p);
       counts.set(k, (counts.get(k) || 0) + 1);
     });
-    const keys = [...counts.keys()].sort((a, b) => {
-      if (a === '未分组') return 1;
-      if (b === '未分组') return -1;
-      return a.localeCompare(b, 'zh');
-    });
+    const keys = [...counts.keys()].sort(compareGroup);
     box.innerHTML = [
       `<button class="chip-btn ${groupFilter ? '' : 'active'}" type="button" data-g="">全部</button>`,
       ...keys.map((k) =>
@@ -516,38 +543,44 @@
 
   /**
    * 点击患者卡：
-   * 1) postMessage 通知宿主桥（桥负责选人 + 打开病情概览新页签）
-   * 2) 同源无桥时：双击选人后走宿主菜单打开新页签
+   * 1) select-patient：宿主选中患者（打开默认患者页签）
+   * 2) SmartCareNavigate + moduleId：打开「病情概览」新页签
    */
   async function openPatientReview(patient) {
     if (!patient) return;
     const keys = patientKeys(patient);
-
-    const payload = {
-      type: 'SmartCareNavigate',
-      action: 'openPatientReview',
-      route: PATIENT_REVIEW_HASH,
-      patientId: keys.id,
-      mrn: keys.mrn,
-      bed: keys.bed,
-      name: keys.name,
-    };
-
     const inIframe = window.top && window.top !== window;
-    try {
-      if (inIframe) {
+
+    if (inIframe) {
+      // IframeData：type + patientId + moduleId 一条消息带全
+      // 旧版宿主 select-patient 忽略 moduleId，再补 SmartCareNavigate + hash
+      const payload = {
+        type: 'select-patient',
+        patientId: keys.id,
+        moduleId: 'doctor-diagnosis-patient-review',
+      };
+      try {
         window.top.postMessage(payload, '*');
         window.parent.postMessage(payload, '*');
+        window.top.postMessage({
+          type: 'SmartCareNavigate',
+          moduleId: 'doctor-diagnosis-patient-review',
+        }, '*');
+        window.parent.postMessage({
+          type: 'SmartCareNavigate',
+          moduleId: 'doctor-diagnosis-patient-review',
+        }, '*');
+      } catch (_) { /* ignore */ }
+      await new Promise((r) => setTimeout(r, 1800));
+      try {
+        window.top.location.hash = PATIENT_REVIEW_HASH;
+      } catch (_) {
+        try { window.top.location.href = hostUrl(PATIENT_REVIEW_HASH); } catch (__) { /* ignore */ }
       }
-    } catch (_) { /* ignore */ }
-
-    // iframe 内：优先交给宿主桥（选人 + 开新页签），本页不抢 hash
-    if (inIframe) {
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((r) => setTimeout(r, 600));
       return;
     }
 
-    // 非 iframe（直接打开本页）：同源选人后用菜单开新页签
     if (trySelectInTop(patient)) {
       await waitForTopPatientSelected(patient, 2500);
       if (openReviewTabViaMenuInTop()) {
@@ -641,7 +674,7 @@
       const k = groupKey(pt);
       (groups[k] = groups[k] || []).push(pt);
     });
-    const groupHtml = Object.keys(groups).sort().map((k) => {
+    const groupHtml = Object.keys(groups).sort(compareGroup).map((k) => {
       const members = groups[k].slice().sort((a, b) => bedSort(a.hisBed || a.bedNumber) - bedSort(b.hisBed || b.bedNumber));
       const doctors = [...new Set(members.map((m) => m.bedDoctor).filter(Boolean))].join('、') || '未分配';
       const ventN = members.filter((m) => m.ventilator || m.crrt).length;

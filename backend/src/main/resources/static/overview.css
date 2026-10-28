@@ -380,6 +380,17 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
 .p-head .pill-days.long { background: #FDE68A; border-color: #FCD34D; color: #7C2D12; font-weight: 500; }
 /* 其它区域胶囊保持原色（非头部） */
 .pill-iso { background: var(--iso-bg); border-color: var(--iso-bd); color: var(--iso-tx); font-weight: 500; }
+/* 隔离类型标准色 */
+.pill-iso-air { background: #FFF8C5; border-color: #FFD60A; color: #8A6D00; }
+.pill-iso-droplet { background: #FCE4EC; border-color: #F48FB1; color: #AD1457; }
+.pill-iso-contact { background: #E3F2FD; border-color: #4292C6; color: #0D47A1; }
+.pill-iso-protect { background: #F3E5F5; border-color: #CE93D8; color: #6A1B9A; }
+.pill-iso-other { background: #ECEFF1; border-color: #90A4AE; color: #37474F; }
+.p-head .pill-iso { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: #fff; }
+.p-head .pill-iso-air, .p-head .pill-iso-droplet, .p-head .pill-iso-contact,
+.p-head .pill-iso-protect, .p-head .pill-iso-other {
+  background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: #fff;
+}
 .pill-days { background: var(--mute-bg); border-color: var(--mute-bd); color: var(--mute-tx); }
 .pill-days.long { background: var(--warn-bg); border-color: var(--warn-bd); color: var(--warn-tx); font-weight: 500; }
 /* 夜间抢救：轻度呼吸式闪烁（克制，仅此一处使用） */
@@ -449,6 +460,9 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
 .chip-danger b { color: var(--danger-tx); }
 .chip-warn { background: var(--warn-bg); border-color: var(--warn-bd); color: var(--warn-tx); }
 .chip-warn b { color: var(--warn-tx); }
+/* 跌倒高危：指定红色 #E53935 */
+.chip-fall { background: #FEE2E2; border-color: #FCA5A5; color: #E53935; }
+.chip-fall b { color: #E53935; }
 .chip-info { background: var(--info-bg); border-color: var(--info-bd); color: var(--info-tx); }
 .chip-info b { color: var(--info-tx); }
 .chip-iso { background: var(--iso-bg); border-color: var(--iso-bd); color: var(--iso-tx); }

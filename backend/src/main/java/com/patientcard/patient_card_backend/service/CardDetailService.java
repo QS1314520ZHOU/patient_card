@@ -953,6 +953,17 @@ public class CardDetailService {
         return (int) Math.max(0, diff / 86400000L);
     }
 
+    /** 入科天数：自然日含当天，当天入科 = 1 */
+    private static int icuDaysInclusive(Date admission, Date asOf) {
+        if (admission == null || asOf == null) {
+            return 1;
+        }
+        java.time.LocalDate a = java.time.ZonedDateTime.ofInstant(admission.toInstant(), java.time.ZoneId.of("Asia/Shanghai")).toLocalDate();
+        java.time.LocalDate b = java.time.ZonedDateTime.ofInstant(asOf.toInstant(), java.time.ZoneId.of("Asia/Shanghai")).toLocalDate();
+        long days = java.time.temporal.ChronoUnit.DAYS.between(a, b) + 1;
+        return (int) Math.max(1, days);
+    }
+
     private static Integer parseMl(String raw) {
         if (raw == null) return null;
         String m = Pattern.compile("(-?\\d+(\\.\\d+)?)").matcher(raw).find()

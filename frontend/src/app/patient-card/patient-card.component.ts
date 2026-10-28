@@ -224,9 +224,15 @@ export class PatientCardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getAdmissionDays(admissionDate?: string): number {
     if (!admissionDate) {
-      return 0;
+      return 1;
     }
-    return Math.max(0, Math.floor((Date.now() - new Date(admissionDate).getTime()) / 86400000));
+    const d = new Date(admissionDate);
+    if (Number.isNaN(d.getTime())) {
+      return 1;
+    }
+    const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.floor((startOfDay(new Date()) - startOfDay(d)) / 86400000);
+    return Math.max(1, diff + 1);
   }
 
   formatDateTime(dateString?: string): string {

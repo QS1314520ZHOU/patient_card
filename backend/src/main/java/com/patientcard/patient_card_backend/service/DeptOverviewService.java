@@ -248,7 +248,7 @@ public class DeptOverviewService {
             p.setGender(gender == null ? null : String.valueOf(gender));
             p.setAdmissionTime(doc.getDate("icuAdmissionTime"));
             if (p.getAdmissionTime() != null) {
-                p.setIcuDays(Math.max(0, (int) ((asOf.getTime() - p.getAdmissionTime().getTime()) / 86400000L)));
+                p.setIcuDays(calendarDaysInclusive(asOf, p.getAdmissionTime()));
             }
             String admissionType = doc.getString("admissionType");
             if (admissionType == null) {
@@ -990,6 +990,19 @@ public class DeptOverviewService {
             age--;
         }
         return Math.max(0, age);
+    }
+
+    /**
+     * 入科天数：按自然日、含当天计。当天入科 = 1 天。
+     */
+    private static int calendarDaysInclusive(Date asOf, Date admission) {
+        if (asOf == null || admission == null) {
+            return 1;
+        }
+        LocalDate asOfDay = ZonedDateTime.ofInstant(asOf.toInstant(), HOSPITAL_ZONE).toLocalDate();
+        LocalDate admitDay = ZonedDateTime.ofInstant(admission.toInstant(), HOSPITAL_ZONE).toLocalDate();
+        long days = java.time.temporal.ChronoUnit.DAYS.between(admitDay, asOfDay) + 1;
+        return (int) Math.max(1, days);
     }
 
     private static String valueAsId(Object value) {

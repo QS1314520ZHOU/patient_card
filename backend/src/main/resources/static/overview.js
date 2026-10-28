@@ -404,26 +404,32 @@
     if (!patient) return;
     const keys = patientKeys(patient);
 
-    const payload = {
-      type: 'SmartCareNavigate',
-      action: 'openPatientReview',
-      route: PATIENT_REVIEW_HASH,
-      patientId: keys.id,
-      mrn: keys.mrn,
-      bed: keys.bed,
-      name: keys.name,
-    };
-
     const inIframe = window.top && window.top !== window;
-    try {
-      if (inIframe) {
+    if (inIframe) {
+      const payload = {
+        type: 'select-patient',
+        patientId: keys.id,
+        moduleId: 'doctor-diagnosis-patient-review',
+      };
+      try {
         window.top.postMessage(payload, '*');
         window.parent.postMessage(payload, '*');
+        window.top.postMessage({
+          type: 'SmartCareNavigate',
+          moduleId: 'doctor-diagnosis-patient-review',
+        }, '*');
+        window.parent.postMessage({
+          type: 'SmartCareNavigate',
+          moduleId: 'doctor-diagnosis-patient-review',
+        }, '*');
+      } catch (_) { /* ignore */ }
+      await new Promise((r) => setTimeout(r, 1800));
+      try {
+        window.top.location.hash = PATIENT_REVIEW_HASH;
+      } catch (_) {
+        try { window.top.location.href = hostUrl(PATIENT_REVIEW_HASH); } catch (__) { /* ignore */ }
       }
-    } catch (_) { /* ignore */ }
-
-    if (inIframe) {
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((r) => setTimeout(r, 600));
       return;
     }
 
@@ -828,15 +834,17 @@
 
     const tags = viewConfig().tags;
     // base 只取风险类目名，高危/中危由本函数补齐，避免出现「跌倒高危中危」
-    const risk = (on, base, level, title) => {
+    // highClass：跌倒高危用指定红 #E53935，其它高危仍用琥珀
+    const risk = (on, base, level, title, highClass) => {
       if (!on) return;
-      if (level === 'high') out.push(chip('chip-warn', `${base}高危`, '', title));
+      if (level === 'high') out.push(chip(highClass || 'chip-warn', `${base}高危`, '', title));
       else if (level === 'medium') out.push(chip('chip-mid', `${base}中危`, '', title));
       else out.push(`<span class="dot" title="${esc(title)}"></span>`);
     };
 
     risk(tags.fall, '跌倒', p.fallLevel,
-      p.fallResult ? `跌倒${p.fallResult} 评分${p.fallScore || ''} ${fmtTime(p.fallAssessTime)}` : '跌倒风险未评估（未评估≠低风险）');
+      p.fallResult ? `跌倒${p.fallResult} 评分${p.fallScore || ''} ${fmtTime(p.fallAssessTime)}` : '跌倒风险未评估（未评估≠低风险）',
+      'chip-fall');
     risk(tags.pressure, '压疮', p.pressureLevel,
       p.pressureResult ? `压力性损伤${p.pressureResult} 评分${p.pressureScore || ''} ${fmtTime(p.pressureAssessTime)}` : '压力性损伤未评估（未评估≠低风险）');
     risk(tags.vte, 'VTE', p.vteLevel, p.vteResult || 'VTE 风险未评估（未评估≠低风险）');
@@ -858,8 +866,10 @@
   }
 
   function isolationPills(p) {
-    return (p.bedTags || []).map((t) =>
-      `<span class="pill pill-iso" title="${esc(t.title || t.label)}">${esc(t.label)}</span>`).join('');
+    return (p.bedTags || []).map((t) => {
+      const kind = t.kind || 'other';
+      return `<span class="pill pill-iso pill-iso-${esc(kind)}" title="${esc(t.title || t.label)}">${esc(t.label)}</span>`;
+    }).join('');
   }
 
   function patientCard(p) {

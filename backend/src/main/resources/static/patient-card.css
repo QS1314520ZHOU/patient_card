@@ -172,6 +172,14 @@ body {
 .tag.alert-vent { background: #E0F2FE; color: #0369A1; border-color: #7DD3FC; }
 .tag.alert-crit { background: #FEE2E2; color: #B91C1C; border-color: #FCA5A5; }
 .tag.alert-high { background: #FEF3C7; color: #B45309; border-color: #FCD34D; }
+/* 跌倒高危：指定红色 #E53935 */
+.tag.alert-fall { background: #FEE2E2; color: #E53935; border-color: #FCA5A5; }
+/* 隔离类型标准色 */
+.tag.iso-air { background: #FFF8C5; color: #8A6D00; border-color: #FFD60A; }
+.tag.iso-droplet { background: #FCE4EC; color: #AD1457; border-color: #F48FB1; }
+.tag.iso-contact { background: #E3F2FD; color: #0D47A1; border-color: #4292C6; }
+.tag.iso-protect { background: #F3E5F5; color: #6A1B9A; border-color: #CE93D8; }
+.tag.iso-other { background: #ECEFF1; color: #37474F; border-color: #90A4AE; }
 .tag.soft, .tag.mute {
   background: #F1F5F9; color: #64748B; border-color: #E2E8F0; font-weight: 500;
 }
