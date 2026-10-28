@@ -1,6 +1,8 @@
 package com.patientcard.patient_card_backend.config;
 
 import com.mongodb.AuthenticationMechanism;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
@@ -69,14 +71,20 @@ public class SmartCareMongoConfig {
             @Value("${mongo.center.username:${mongo.username}}") String username,
             @Value("${mongo.center.password:${mongo.password}}") String password,
             @Value("${mongo.center.authSource:${mongo.center.database}}") String authSource,
-            @Value("${mongo.center.authMechanism:SCRAM-SHA-256}") String authMechanism) {
+            @Value("${mongo.center.authMechanism:SCRAM-SHA-1}") String authMechanism) {
+        boolean auth = username != null && !username.trim().isEmpty();
+        LoggerFactory.getLogger(SmartCareMongoConfig.class).info(
+                "DataCenter Mongo: host={}, port={}, username={}, authSource={}, authMechanism={}, auth={}",
+                host, port, auth ? username.trim() : "(none)", authSource, authMechanism, auth);
         MongoClientSettings.Builder builder = MongoClientSettings.builder()
                 .applyToClusterSettings(settings -> settings.hosts(
                         Collections.singletonList(new ServerAddress(host, port))));
-        if (username != null && !username.trim().isEmpty()) {
+        if (auth) {
             MongoCredential credential = MongoCredential
-                    .createCredential(username.trim(), authSource, password.toCharArray())
-                    .withMechanism(AuthenticationMechanism.fromMechanismName(authMechanism));
+                    .createCredential(username.trim(), authSource, password.toCharArray());
+            if (authMechanism != null && !authMechanism.trim().isEmpty()) {
+                credential = credential.withMechanism(AuthenticationMechanism.fromMechanismName(authMechanism.trim()));
+            }
             builder.credential(credential);
         }
         return MongoClients.create(builder.build());
@@ -85,7 +93,7 @@ public class SmartCareMongoConfig {
     @Bean
     @ConditionalOnProperty(value = "mongo.center.database")
     public MongoTemplate centerMongoTemplate(
-            MongoClient centerMongoClient,
+            @Qualifier("centerMongoClient") MongoClient centerMongoClient,
             @Value("${mongo.center.database}") String centerDatabase) {
         return new MongoTemplate(
                 new SimpleMongoClientDatabaseFactory(centerMongoClient, centerDatabase));
