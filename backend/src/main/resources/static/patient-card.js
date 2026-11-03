@@ -259,12 +259,16 @@
     const doctor = (p.bedDoctor || '').trim() || '未分配';
     const grp = groupKey(p);
     const bed = p.bedNumber || p.hisBed || '—';
-    return `<article class="card ${activeId === p.id ? 'active' : ''}" data-id="${esc(p.id)}" data-bed="${esc(bed)}">
+    const isNew = !!p.newAdmission; // 后端口径：北京时间 昨日08:00 ~ 今日08:00
+    const admitHm = admit.length > 6 ? admit.slice(6) : admit;
+    return `<article class="card${isNew ? ' is-new24' : ''} ${activeId === p.id ? 'active' : ''}" data-id="${esc(p.id)}" data-bed="${esc(bed)}">
       <header class="card-head">
         <div class="bed">${esc(bed)}床</div>
         <div class="name">${esc(p.name || '—')}</div>
         <div class="head-right">
-          <span class="pill-days" title="入科 ${days} 天">入科${days}天</span>
+          ${isNew
+            ? `<span class="pill-new" title="新收（昨日08:00~今日08:00） · 入科 ${esc(admit)}">新收 ${esc(admitHm)}</span>`
+            : `<span class="pill-days" title="入科 ${days} 天">入科${days}天</span>`}
           ${longStay ? `<span class="pill-days long" title="ICU 住院已达 ${days} 天，晨会重点评估">长程</span>` : ''}
         </div>
       </header>

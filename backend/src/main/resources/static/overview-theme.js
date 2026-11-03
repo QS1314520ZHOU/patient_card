@@ -1,5 +1,5 @@
 /* ============================================================
- * 重症医学科 · 早交班大屏 — 颜色标识配置（配色面板）
+ * 颜色标识配置（配色面板）— 病区概览 index.html 与 大交班 overview.html 共用
  * - 每个标识可用 色相/饱和度/亮度 滑块、取色器或输入 #色号 调整
  * - 修改即时作用于整屏卡片（CSS 变量）
  * - 点「保存」→ PUT /api/v1/icu-overview/theme，后端回写 config/application.yml 的 overview.theme，
@@ -202,16 +202,15 @@
   }
 
   function previewHtml() {
-    var card = function (bed, name, who, right, isNew) {
-      return '<div class="p-card tp-card' + (isNew ? ' is-new24' : '') + '">'
-        + '<div class="p-head"><span class="p-bed">' + bed + '床</span>'
-        + '<span class="p-ident"><span class="p-name">' + name + '</span><span class="p-who">' + who + '</span></span>'
-        + '<span class="p-head-right">' + right + '</span></div>'
-        + '<div class="tp-body">' + (isNew ? '肾功能不全 · 住院号2081093' : '慢阻肺急性加重 · 住院号2068345') + '</div></div>';
+    var card = function (bed, name, who, right, isNew, body) {
+      return '<div class="tp-card' + (isNew ? ' is-new' : '') + '">'
+        + '<div class="tp-card-head"><span class="tp-bed">' + bed + '床</span>'
+        + '<span class="tp-name">' + name + '</span><span class="tp-who">' + who + '</span>'
+        + '<span class="tp-right">' + right + '</span></div>'
+        + '<div class="tp-card-body">' + body + '</div></div>';
     };
-    return card('16', '彭光学', '男76岁', '<span class="pill pill-new">新收 00:30</span>', true)
-      + card('03', '陈康强', '男72岁', '<span class="pill pill-iso">接触隔离</span>'
-        + '<span class="pill pill-days long">入科27天</span><span class="pill pill-days long">长程</span>', false);
+    return card('16', '彭光学', '男76岁', '<span class="tp-pill new">新收 00:30</span>', true, '新收 · 肾功能不全')
+      + card('03', '陈康强', '男72岁', '<span class="tp-pill">入科27天</span><span class="tp-pill long">长程</span>', false, '普通 · 慢阻肺急性加重');
   }
 
   function buildPanel() {
@@ -220,13 +219,13 @@
     panel.hidden = true;
     panel.setAttribute('aria-label', '颜色标识配置');
     panel.innerHTML = '<div class="tp-head"><span>颜色标识配置</span>'
-      + '<span class="tp-sub">' + (offline ? '离线预览：保存仅本机生效' : '修改即时预览，保存后所有大屏统一生效') + '</span>'
+      + '<span class="tp-sub">' + (offline ? '离线预览：保存仅本机生效' : '实时预览 · 保存后所有大屏统一') + '</span>'
       + '<button type="button" class="icon-btn" data-act="cancel">关闭</button></div>'
       + '<div class="tp-preview">' + previewHtml() + '</div>'
       + '<div class="tp-list"></div>'
       + '<div class="tp-foot"><button type="button" data-act="reset">恢复默认</button>'
       + '<span class="tp-gap"></span><button type="button" data-act="cancel">取消</button>'
-      + '<button type="button" class="active" data-act="save">保存</button></div>';
+      + '<button type="button" class="tp-primary" data-act="save">保存</button></div>';
 
     var list = panel.querySelector('.tp-list');
     ITEMS.forEach(function (it) { list.appendChild(buildRow(it)); });
@@ -374,7 +373,7 @@
     panel.hidden = false;
     document.body.classList.add('theme-open');
     var btn = document.getElementById('btnTheme');
-    if (btn) btn.classList.add('active');
+    if (btn) { btn.classList.add('active'); btn.classList.add('on'); }
   }
 
   function close(keep) {
@@ -382,15 +381,21 @@
     if (panel) panel.hidden = true;
     document.body.classList.remove('theme-open');
     var btn = document.getElementById('btnTheme');
-    if (btn) btn.classList.remove('active');
+    if (btn) { btn.classList.remove('active'); btn.classList.remove('on'); }
   }
 
+  var toastEl = null;
+  var toastTimer = null;
   function notify(msg) {
-    var t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.hidden = false;
-    setTimeout(function () { t.hidden = true; }, 2500);
+    if (!toastEl) {
+      toastEl = el('div', 'tp-toast');
+      toastEl.hidden = true;
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3000);
   }
 
   function init() {

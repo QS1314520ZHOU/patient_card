@@ -11,10 +11,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -271,13 +268,12 @@ public class PatientRiskService {
         return pipeScoreType;
     }
 
+    /**
+     * 新收窗口：北京时间 [昨日 08:00, 今日 08:00)（与科室早交班口径一致，与大屏 newAdmission24h 同源）。
+     * 8 点前打开时终点在未来，凌晨收的病人会立即标识。
+     */
     private Date[] currentBusinessWindow() {
-        ZonedDateTime now = ZonedDateTime.now(HOSPITAL_ZONE);
-        LocalDate startDate = now.toLocalTime().isBefore(LocalTime.of(8, 0))
-                ? now.toLocalDate().minusDays(1)
-                : now.toLocalDate();
-        ZonedDateTime start = startDate.atTime(8, 0).atZone(HOSPITAL_ZONE);
-        return new Date[]{Date.from(start.toInstant()), Date.from(start.plusDays(1).toInstant())};
+        return DeptOverviewService.newAdmissionWindow(new Date());
     }
 
     private String valueAsId(Object value) {

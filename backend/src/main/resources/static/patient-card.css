@@ -9,6 +9,11 @@
   --warn: #C47B1A; --warn-bg: #FBF0DC;
   --info: #2F6FED; --info-bg: #E8F0FE;
   --ok: #3A9A6A;
+  /* 颜色标识（「配色」面板实时调整，保存到 config/application.yml 的 overview.theme） */
+  --head-bg: #5392FF;  --head-bg-2: #5392FF;
+  --new-head: #0EA5A4; --new-head-2: #14B8A6;
+  --new-pill-tx: #059669; --new-pill-ring: rgba(5, 150, 105, .22);
+  --long-bg: #FDE68A;  --long-bd: #FCD34D; --long-tx: #7C2D12;
 }
 
 html, body { height: 100%; }
@@ -96,8 +101,24 @@ body {
 .card-head {
   height: 40px; flex: 0 0 40px; padding: 0 12px;
   display: flex; align-items: center; border-bottom: 1px solid transparent;
-  background: #5392FF;
+  background: var(--head-bg);
+  background: linear-gradient(90deg, var(--head-bg), var(--head-bg-2));
   color: #fff;
+}
+/* 新收（北京时间 昨日08:00 ~ 今日08:00）：卡头整块换色 */
+.card.is-new24 .card-head {
+  background: var(--new-head);
+  background: linear-gradient(90deg, var(--new-head), var(--new-head-2));
+}
+.pill-new {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; border-radius: 999px; padding: 1px 8px; white-space: nowrap;
+  background: #fff; color: var(--new-pill-tx); font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .14);
+}
+.pill-new::before {
+  content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--new-pill-tx); box-shadow: 0 0 0 2px var(--new-pill-ring);
 }
 .bed { font-size: 16px; font-weight: 700; min-width: 48px; color: #fff; }
 .name { flex: 1; text-align: center; font-size: 15px; font-weight: 700; color: #fff; }
@@ -107,8 +128,8 @@ body {
   color: #fff; background: rgba(255, 255, 255, .2);
 }
 .pill-days.long {
-  color: #7C2D12; background: #FDE68A; font-weight: 700;
-  border: 1px solid #FCD34D;
+  color: var(--long-tx); background: var(--long-bg); font-weight: 700;
+  border: 1px solid var(--long-bd);
 }
 
 .card-body {

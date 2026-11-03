@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>病区概览</title>
-  <link rel="stylesheet" href="patient-card.css?v=2">
+  <link rel="stylesheet" href="patient-card.css?v=3">
+  <link rel="stylesheet" href="overview-theme.css?v=3">
 </head>
 <body>
   <div class="shell">
@@ -15,6 +16,7 @@
       <div class="actions">
         <button class="btn" type="button" id="btnStats">统计</button>
         <button class="btn" type="button" id="btnHandover" title="交班模式：停止自动滚动，固定床位顺序便于讲解">交班模式</button>
+        <button class="btn" type="button" id="btnTheme" title="配置卡片颜色标识（实时预览，所有大屏统一）">配色</button>
         <button class="btn primary" type="button" id="btnRefresh">刷新</button>
       </div>
     </header>
@@ -58,6 +60,7 @@
       <span class="right">本屏用于交班辅助，非床旁实时监护</span>
     </div>
   </div>
-  <script src="patient-card.js?v=2"></script>
+  <script src="patient-card.js?v=3"></script>
+  <script src="overview-theme.js?v=3"></script>
 </body>
 </html>
