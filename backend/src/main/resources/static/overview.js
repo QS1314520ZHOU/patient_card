@@ -82,7 +82,7 @@
   }
 
   /**
-   * 新收标识（卡头配色）：入科时间落在 [昨日 08:00, 今日 08:00)。
+   * 卡头配色标识：入科时间落在北京时间 [昨日 08:00, 今日 08:00)；与「本班新收 / 新入科」统计口径无关。
    * 以后端 newAdmission24h 为准；旧后端/离线演示缺该字段时按 asOf 在前端兜底计算。
    */
   function isNew24(p) {
@@ -157,7 +157,7 @@
     vent: { label: '有创通气', test: (p) => !!p.ventilator },
     shock: { label: '休克/升压药', test: (p) => !!p.vasoactive },
     critical: { label: '极危重', test: (p) => severityScore(p) >= 6 || (p.criticalPending || 0) > 0 },
-    new: { label: '新入科', test: (p) => isNew24(p) },
+    new: { label: '新入科', test: (p) => !!p.newAdmission },
   };
 
   // ================= 提示 / 状态层 =================
@@ -824,8 +824,7 @@
     // 指标「管道高风险」仍在底栏辅助指标中可下钻。
 
     // 收治类型（灰/蓝）
-    // 已在卡头以新收配色+胶囊标识的，不再重复本行小标签
-    if (p.newAdmission && !isNew24(p)) out.push(chip('chip-info', '新收', '', `入科 ${fmtTime(p.admissionTime)}`));
+    if (p.newAdmission) out.push(chip('chip-info', '新收', '', `入科 ${fmtTime(p.admissionTime)}`));
     if (p.surgeryAdmission) out.push(chip('chip-mute', '术', '', '手术入科'));
     if (p.transferIn) out.push(chip('chip-mute', '转', '', '转入入科'));
 
@@ -911,11 +910,7 @@
     const daysTitle = longStay
       ? `ICU 住院已达 ${p.icuDays} 天（阈值 ${snap.longStayDays} 天），晨会重点评估 MDT / 脱机与营养`
       : `入科 ${fmtTime(p.admissionTime)}`;
-    const newPill = new24
-      ? `<span class="pill pill-new" title="新收（昨日08:00~今日08:00） · 入科 ${esc(fmtTime(p.admissionTime))}">`
-        + `新收 ${esc(fmtShort(p.admissionTime).slice(6))}</span>`
-      : '';
-    const daysPill = new24 ? newPill : p.icuDays == null ? ''
+    const daysPill = p.icuDays == null ? ''
       : `<span class="pill pill-days${longStay ? ' long' : ''}" title="${esc(daysTitle)}">`
         + `入科${p.icuDays}天</span>`
       + (longStay ? `<span class="pill pill-days long" title="${esc(daysTitle)}">长程</span>` : '');

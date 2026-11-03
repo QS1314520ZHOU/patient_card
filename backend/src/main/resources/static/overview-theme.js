@@ -21,19 +21,13 @@
   /** vars(hex) 返回需要写入 :root 的 CSS 变量；contrastOn 用于可读性提示 */
   var ITEMS = [
     {
-      key: 'newHead', label: '新收卡头', desc: '昨日 08:00 ~ 今日 08:00 入科的病人卡片顶部',
+      key: 'newHead', label: '昨日收治卡头', desc: '北京时间 昨日08:00 ~ 今日08:00 入科的病人卡片顶部',
       def: '#0EA5A4', contrastOn: '#FFFFFF', contrastLabel: '白字',
       presets: ['#0EA5A4', '#10B981', '#0891B2', '#7C3AED', '#DB2777', '#EA580C'],
       vars: function (hex) { return { '--new-head': hex, '--new-head-2': shiftL(hex, 6) }; }
     },
     {
-      key: 'newPill', label: '新收标签文字', desc: '卡头右侧白底「新收 HH:mm」的文字与圆点',
-      def: '#059669', contrastOn: '#FFFFFF', contrastLabel: '白底',
-      presets: ['#059669', '#0F766E', '#0369A1', '#6D28D9', '#BE185D', '#C2410C'],
-      vars: function (hex) { return { '--new-pill-tx': hex, '--new-pill-ring': rgba(hex, 0.22) }; }
-    },
-    {
-      key: 'normalHead', label: '普通卡头', desc: '非新收病人卡片顶部',
+      key: 'normalHead', label: '普通卡头', desc: '其他病人卡片顶部',
       def: '#5392FF', contrastOn: '#FFFFFF', contrastLabel: '白字',
       presets: ['#5392FF', '#3B82F6', '#2563EB', '#0284C7', '#475569', '#4F46E5'],
       vars: function (hex) { return { '--head-bg': hex, '--head-bg-2': hex }; }
@@ -209,8 +203,8 @@
         + '<span class="tp-right">' + right + '</span></div>'
         + '<div class="tp-card-body">' + body + '</div></div>';
     };
-    return card('16', '彭光学', '男76岁', '<span class="tp-pill new">新收 00:30</span>', true, '新收 · 肾功能不全')
-      + card('03', '陈康强', '男72岁', '<span class="tp-pill">入科27天</span><span class="tp-pill long">长程</span>', false, '普通 · 慢阻肺急性加重');
+    return card('16', '彭光学', '男76岁', '<span class="tp-pill">入科1天</span>', true, '昨日08:00~今日08:00 入科 · 肾功能不全')
+      + card('03', '陈康强', '男72岁', '<span class="tp-pill">入科27天</span><span class="tp-pill long">长程</span>', false, '其他病人 · 慢阻肺急性加重');
   }
 
   function buildPanel() {

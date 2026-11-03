@@ -239,8 +239,11 @@ public class Patient {
     // 前端展示用：命中的医嘱关键字（用于底部红圈动态展示）
     private List<String> orderAlertKeywords;
 
-    // 新收：北京时间 昨日08:00（含）~ 今日08:00（不含）入科
+    // 08:00 至次日 08:00 业务日内新入科
     private Boolean newAdmission;
+
+    // 卡头配色标识：北京时间 昨日08:00（含）~ 今日08:00（不含）入科；与上面实时「新收」口径无关
+    private Boolean newAdmission24h;
 
     // 入科类型标识
     private Boolean surgeryAdmission;

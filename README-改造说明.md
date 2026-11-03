@@ -270,10 +270,11 @@ iframe.contentWindow.postMessage({ deptCode: '112' }, targetOrigin);
 { deptCode: '112', status: 'admitted' }
 ```
 
-## 新收标识与统一配色
+## 昨日收治标识与统一配色
 
-- 新收（病区概览 `index.html` 与大交班 `overview.html` 同一口径）：入科时间（`icuAdmissionTime`）落在**北京时间昨日 08:00（含）~ 今日 08:00（不含）**的病人，
-  卡头整块显示新收色并带「新收 HH:mm」标签；字段 `newAdmission24h`，不随「上一班/最近24小时」切换。
+- 卡头标识（病区概览 `index.html` 与大交班 `overview.html` 同一口径）：入科时间（`icuAdmissionTime`）落在
+  **北京时间昨日 08:00（含）~ 今日 08:00（不含）**的病人，卡头整块显示标识色（默认青绿）；字段 `newAdmission24h`。
+  KPI「新收」、「新入科」筛选仍为原实时口径（`newAdmission`），互不影响。
 - 配色：两个页面右上角均有「配色」按钮（共用 `overview-theme.js/css`），可用色相/饱和度/亮度滑块、取色器或输入 `#色号` 调整，实时预览。
   保存后回写 `config/application.yml` 的 `overview.theme` 段（写前备份为 `application.yml.bak`，
   只改颜色行，其它配置与注释不动），所有大屏刷新或 60 秒内自动同步。
