@@ -57,6 +57,19 @@ public class CardSupportService {
     @Value("${overview.support.crrt-values:crrt}")
     private String crrtTypeValues;
 
+    /** 危急值标识：DataCenter 住院病人视图，按 pid 和 mrn 共同关联，直接展示 VTEMC 原文 */
+    @Value("${mongo.center.zybr.collection:VI_ICU_ZYBR}")
+    private String zybrCollection;
+
+    @Value("${mongo.center.zybr.pid-field:pid}")
+    private String zybrPidField;
+
+    @Value("${mongo.center.zybr.mrn-field:mrn}")
+    private String zybrMrnField;
+
+    @Value("${mongo.center.zybr.vte-field:VTEMC}")
+    private String zybrVteField;
+
     @Value("${overview.tube.airway-types:气管插管,气切套管}")
     private String airwayTypesRaw;
 
@@ -87,8 +100,72 @@ public class CardSupportService {
             p.setDifficultAirway(airwayIds.contains(id));
             // 隔离不允许沿用 patient 集合基本信息字段，先清空再只认医嘱
             p.setIsolation(null);
+            p.setVteCritical(null);
         }
         enrichIsolation(patients);
+        enrichVteCritical(patients);
+    }
+
+    /**
+     * ZYBR.pid = patient.hisPid 且 ZYBR.mrn = patient.mrn，两个字段均需匹配。
+     * 若同一组合有多条记录，按 _id 倒序取第一条；其 VTEMC 为空时不显示，避免回退到旧值。
+     */
+    private void enrichVteCritical(List<Patient> patients) {
+        MongoTemplate center = centerProvider.getIfAvailable();
+        if (center == null) return;
+        Set<String> pids = new HashSet<>();
+        Set<String> mrns = new HashSet<>();
+        for (Patient p : patients) {
+            String pid = trimToNull(p.getHisPid());
+            String mrn = trimToNull(p.getMrn());
+            if (pid != null && mrn != null) {
+                pids.add(pid);
+                mrns.add(mrn);
+            }
+        }
+        if (pids.isEmpty()) return;
+        try {
+            Query q = new Query(Criteria.where(zybrPidField).in(queryKeys(pids))
+                    .and(zybrMrnField).in(queryKeys(mrns)));
+            q.fields().include(zybrPidField).include(zybrMrnField).include(zybrVteField);
+            q.with(Sort.by(Sort.Direction.DESC, "_id"));
+            List<Document> rows = center.find(q, Document.class, zybrCollection);
+            Map<List<String>, String> values = new HashMap<>();
+            for (Document d : rows) {
+                String pid = trimToNull(d.get(zybrPidField));
+                String mrn = trimToNull(d.get(zybrMrnField));
+                if (pid == null || mrn == null) continue;
+                List<String> key = java.util.Arrays.asList(pid, mrn);
+                if (!values.containsKey(key)) {
+                    Object raw = d.get(zybrVteField);
+                    String vte = raw == null ? null : String.valueOf(raw);
+                    values.put(key, vte == null || vte.trim().isEmpty() ? null : vte);
+                }
+            }
+            int matched = 0;
+            for (Patient p : patients) {
+                String pid = trimToNull(p.getHisPid());
+                String mrn = trimToNull(p.getMrn());
+                if (pid == null || mrn == null) continue;
+                String vte = values.get(java.util.Arrays.asList(pid, mrn));
+                if (vte != null) { p.setVteCritical(vte); matched++; }
+            }
+            log.info("{}.{} 危急值标识命中 {} 人（按 pid 和 mrn 匹配）", zybrCollection, zybrVteField, matched);
+        } catch (Exception ex) {
+            log.warn("{} 危急值标识查询失败：{}", zybrCollection, ex.getMessage());
+        }
+    }
+
+    private static List<Object> queryKeys(Set<String> identifiers) {
+        List<Object> keys = new java.util.ArrayList<>(identifiers);
+        for (String id : identifiers) {
+            try {
+                long numeric = Long.parseLong(id);
+                // 不把前导零标识符当成数字，避免不同住院号发生误匹配。
+                if (Long.toString(numeric).equals(id)) keys.add(numeric);
+            } catch (NumberFormatException ignore) { /* 非整数标识 */ }
+        }
+        return keys;
     }
 
     /**
@@ -186,6 +263,12 @@ public class CardSupportService {
         if (core.contains("接触") || core.contains("严密")) topics.add("contact");
         if (topics.isEmpty() && core.contains("隔离")) topics.add("other");
         return topics;
+    }
+
+    private static String trimToNull(Object v) {
+        if (v == null) return null;
+        String s = String.valueOf(v).trim();
+        return s.isEmpty() || "null".equalsIgnoreCase(s) ? null : s;
     }
 
     private static String str(Object v) {

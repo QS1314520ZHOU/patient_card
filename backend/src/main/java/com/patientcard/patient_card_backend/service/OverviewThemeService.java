@@ -31,11 +31,15 @@ public class OverviewThemeService {
         KEYS.put("newHead", "new-head");
         KEYS.put("newPill", "new-pill");
         KEYS.put("normalHead", "normal-head");
+        KEYS.put("critBg", "crit-bg");
+        KEYS.put("critMediumBg", "crit-medium-bg");
         KEYS.put("longBg", "long-bg");
         KEYS.put("longTx", "long-tx");
         DEFAULTS.put("newHead", "#10B9A0");
         DEFAULTS.put("newPill", "#059669");
         DEFAULTS.put("normalHead", "#5392FF");
+        DEFAULTS.put("critBg", "#DC2626");
+        DEFAULTS.put("critMediumBg", "#B45309");
         DEFAULTS.put("longBg", "#FDE68A");
         DEFAULTS.put("longTx", "#7C2D12");
     }

@@ -37,6 +37,12 @@ mongo:
   # DataCenter 与 SmartCare 不同集群或不同账号时，在 config/application.yml 里显式覆盖
   center:
     database: ""
+    # 危急值标识：VI_ICU_ZYBR.VTEMC 原文显示在卡片底部，空值不显示；按 pid = patient.hisPid 且 mrn = patient.mrn 关联
+    zybr:
+      collection: VI_ICU_ZYBR
+      pid-field: pid
+      mrn-field: mrn
+      vte-field: VTEMC
 
 # 科室概览 / 大交班大屏
 overview:
@@ -45,6 +51,8 @@ overview:
     new-head: "#10B9A0"     # 昨日收治卡头渐变终点色（北京时间 昨日08:00 ~ 今日08:00 入科，由普通蓝渐变到此色）
     new-pill: "#059669"     # 卡头白底「新收 HH:mm」标签文字
     normal-head: "#5392FF"  # 普通卡头
+    crit-bg: "#DC2626"      # VTE高标签底色，白字
+    crit-medium-bg: "#B45309" # VTE中标签底色，白字
     long-bg: "#FDE68A"      # 长程标签底色
     long-tx: "#7C2D12"      # 长程标签文字
     edit-key: ""            # 非空时保存配色需输入此口令

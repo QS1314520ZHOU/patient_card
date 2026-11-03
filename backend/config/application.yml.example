@@ -29,6 +29,12 @@ mongo:
     # password: 请填写实际密码      # 缺省 = mongo.password
     # authSource: DataCenter       # 缺省 = mongo.center.database
     # authMechanism: SCRAM-SHA-256 # 缺省 = SCRAM-SHA-256
+    # 危急值标识：同时匹配 ZYBR.pid = patient.hisPid 和 ZYBR.mrn = patient.mrn
+    zybr:
+      collection: VI_ICU_ZYBR
+      pid-field: pid
+      mrn-field: mrn
+      vte-field: VTEMC
 
 # VTE MySQL
 spring:
@@ -72,6 +78,8 @@ overview:
     normal-head: "#5392FF"  # 普通卡头
     long-bg: "#FDE68A"      # 长程标签底色
     long-tx: "#7C2D12"      # 长程标签文字
+    crit-bg: "#DC2626"      # VTE高标签底色，白字
+    crit-medium-bg: "#B45309" # VTE中标签底色，白字
     edit-key: ""            # 非空时保存配色需输入此口令
   refresh-seconds: 60
   snapshot-ttl-seconds: 600

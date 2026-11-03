@@ -84,6 +84,9 @@ public class Patient {
 
     private String isolation;
 
+    // 危急值标识：DataCenter VI_ICU_ZYBR.VTEMC 原文；为空不显示
+    private String vteCritical;
+
     private String position;
 
     private String hisBed;

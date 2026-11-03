@@ -14,6 +14,8 @@
   --new-head: #10B9A0; --new-head-2: #10B9A0;
   --new-pill-tx: #059669; --new-pill-ring: rgba(5, 150, 105, .22);
   --long-bg: #FDE68A;  --long-bd: #FCD34D; --long-tx: #7C2D12;
+  --crit-bg: #DC2626;  --crit-ring: rgba(220, 38, 38, .18); /* VTE高 */
+  --crit-medium-bg: #B45309; --crit-medium-ring: rgba(180, 83, 9, .18); /* VTE中 */
 }
 
 html, body { height: 100%; }
@@ -201,6 +203,21 @@ body {
 .tag.iso-contact { background: #E3F2FD; color: #0D47A1; border-color: #4292C6; }
 .tag.iso-protect { background: #F3E5F5; color: #6A1B9A; border-color: #CE93D8; }
 .tag.iso-other { background: #ECEFF1; color: #37474F; border-color: #90A4AE; }
+/* VTEMC：VTE高红色、VTE中橙色，其他内容中性色 */
+.tag.alert-vtemc {
+  --tag-vte-bg: #475569; --tag-vte-ring: rgba(71,85,105,.18);
+  background: var(--tag-vte-bg); border-color: var(--tag-vte-bg); color: #fff; font-weight: 700;
+  max-width: 100%; height: auto; min-height: 22px; padding: 3px 7px;
+  white-space: normal; overflow-wrap: anywhere; line-height: 1.3; gap: 4px;
+  box-shadow: 0 0 0 2px var(--tag-vte-ring);
+}
+.tag.alert-vtemc.vtemc-high { --tag-vte-bg: var(--crit-bg); --tag-vte-ring: var(--crit-ring); }
+.tag.alert-vtemc.vtemc-medium { --tag-vte-bg: var(--crit-medium-bg); --tag-vte-ring: var(--crit-medium-ring); }
+.tag.alert-vtemc::before {
+  content: "!"; flex: none; width: 13px; height: 13px; border-radius: 50%;
+  background: #fff; color: var(--tag-vte-bg); font-size: 10px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+}
 .tag.soft, .tag.mute {
   background: #F1F5F9; color: #64748B; border-color: #E2E8F0; font-weight: 500;
 }

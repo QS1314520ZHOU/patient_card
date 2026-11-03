@@ -220,6 +220,15 @@
   function buildTags(p) {
     const alert = [];
     const soft = [];
+    // 危急值（DataCenter VI_ICU_ZYBR.VTEMC 原文）：实心红底置首位，空值不显示
+    const vtemc = String(p.vteCritical == null ? '' : p.vteCritical);
+    if (vtemc.trim()) {
+      // 同时包含高/中时优先高；无法识别时用中性色，不推断等级。
+      const high = /VTE\s*[:：-]?\s*高/i.test(vtemc);
+      const medium = /VTE\s*[:：-]?\s*中/i.test(vtemc);
+      const level = high ? 'vtemc-high' : medium ? 'vtemc-medium' : '';
+      alert.push({ t: vtemc, c: `alert-vtemc ${level}`, title: vtemc });
+    }
     if (p.ventilator) alert.push({ t: '呼吸机', c: 'alert-vent' });
     if (p.crrt) alert.push({ t: 'CRRT', c: 'alert-crit' });
     if (p.difficultAirway) alert.push({ t: '困难气道', c: 'alert-crit' });

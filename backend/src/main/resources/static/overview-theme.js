@@ -39,6 +39,18 @@
       vars: function (hex) { return { '--head-bg': hex, '--head-bg-2': hex }; }
     },
     {
+      key: 'critBg', label: 'VTE高标签底色', desc: 'VTEMC 包含 VTE高 时的标签（白字）',
+      def: '#DC2626', contrastOn: '#FFFFFF', contrastLabel: '白字',
+      presets: ['#DC2626', '#B91C1C', '#E11D48', '#BE123C', '#C2410C', '#7C3AED'],
+      vars: function (hex) { return { '--crit-bg': hex, '--crit-ring': rgba(hex, 0.18) }; }
+    },
+    {
+      key: 'critMediumBg', label: 'VTE中标签底色', desc: 'VTEMC 包含 VTE中 时的标签（白字）',
+      def: '#B45309', contrastOn: '#FFFFFF', contrastLabel: '白字',
+      presets: ['#B45309', '#C2410C', '#A16207', '#9A3412', '#92400E', '#B91C1C'],
+      vars: function (hex) { return { '--crit-medium-bg': hex, '--crit-medium-ring': rgba(hex, 0.18) }; }
+    },
+    {
       key: 'longBg', label: '长程标签底色', desc: '卡头「入科N天 / 长程」高亮胶囊',
       def: '#FDE68A', contrastOn: null,
       presets: ['#FDE68A', '#FED7AA', '#FBCFE8', '#DDD6FE', '#BFDBFE', '#FFFFFF'],
@@ -209,8 +221,8 @@
         + '<span class="tp-right">' + right + '</span></div>'
         + '<div class="tp-card-body">' + body + '</div></div>';
     };
-    return card('16', '彭光学', '男76岁', '<span class="tp-pill new">新收 22:35</span>', true, '昨日08:00~今日08:00 入科 · 肾功能不全')
-      + card('03', '陈康强', '男72岁', '<span class="tp-pill">入科27天</span><span class="tp-pill long">长程</span>', false, '其他病人 · 慢阻肺急性加重');
+    return card('16', '彭光学', '男76岁', '<span class="tp-pill new">新收 22:35</span>', true, '昨日08:00~今日08:00 入科 · 肾功能不全 <span class="tp-crit">VTE高危</span>')
+      + card('03', '陈康强', '男72岁', '<span class="tp-pill">入科27天</span><span class="tp-pill long">长程</span>', false, '其他病人 · 慢阻肺急性加重 <span class="tp-crit medium">VTE中</span>');
   }
 
   function buildPanel() {
