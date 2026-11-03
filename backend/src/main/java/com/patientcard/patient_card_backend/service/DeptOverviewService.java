@@ -145,6 +145,8 @@ public class DeptOverviewService {
         }
         eventFrom = window[0];
         eventTo = window[1];
+        // 新收标识固定口径：昨日 08:00 ~ 今日 08:00，不随事件窗切换
+        Date[] newAdmitWindow = newAdmissionWindow(asOf);
 
         List<String> qualityNotes = new ArrayList<>();
 
@@ -258,6 +260,9 @@ public class DeptOverviewService {
             boolean isNew = p.getAdmissionTime() != null
                     && !p.getAdmissionTime().before(eventFrom) && p.getAdmissionTime().before(eventTo);
             p.setNewAdmission(isNew);
+            p.setNewAdmission24h(p.getAdmissionTime() != null
+                    && !p.getAdmissionTime().before(newAdmitWindow[0])
+                    && p.getAdmissionTime().before(newAdmitWindow[1]));
             p.setSurgeryAdmission("手术".equals(admissionType));
             p.setTransferIn(admissionType.contains("转入"));
 
@@ -495,6 +500,8 @@ public class DeptOverviewService {
         snapshot.setSnapshotId(UUID.randomUUID().toString().replace("-", ""));
         snapshot.setAsOf(asOfText);
         snapshot.setEventFrom(eventFrom);
+        snapshot.setNewAdmitFrom(newAdmitWindow[0]);
+        snapshot.setNewAdmitTo(newAdmitWindow[1]);
         snapshot.setEventTo(eventTo);
         snapshot.setScope(resolveScope(normalized));
         snapshot.setMetrics(metrics);
@@ -869,6 +876,17 @@ public class DeptOverviewService {
         }
         ZonedDateTime from = start.atTime(8, 0).atZone(HOSPITAL_ZONE);
         return new Date[]{Date.from(from.toInstant()), now};
+    }
+
+    /**
+     * 新收标识窗口：[昨日 08:00, 今日 08:00)（按医院时区的自然日）。
+     * 8 点前打开时窗口终点在未来，凌晨收的病人也会立即标识，正好供当天早交班使用。
+     */
+    public static Date[] newAdmissionWindow(Date now) {
+        ZonedDateTime zdt = ZonedDateTime.ofInstant(now.toInstant(), HOSPITAL_ZONE);
+        ZonedDateTime to = zdt.toLocalDate().atTime(8, 0).atZone(HOSPITAL_ZONE);
+        ZonedDateTime from = to.minusDays(1);
+        return new Date[]{Date.from(from.toInstant()), Date.from(to.toInstant())};
     }
 
     private static int sumInt(List<OverviewPatient> patients,

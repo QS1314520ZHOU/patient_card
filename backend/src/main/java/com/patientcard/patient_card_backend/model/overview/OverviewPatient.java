@@ -24,6 +24,8 @@ public class OverviewPatient {
     private Date admissionTime;
     private Integer icuDays;
     private Boolean newAdmission;
+    /** 新收标识：入科时间落在 [昨日 08:00, 今日 08:00)，与事件窗切换无关（卡头配色用） */
+    private Boolean newAdmission24h;
     private Boolean surgeryAdmission;
     private Boolean transferIn;
     private Boolean ventilator;

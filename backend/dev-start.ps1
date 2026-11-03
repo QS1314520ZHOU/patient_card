@@ -2,7 +2,7 @@
 # 需先单独停止旧进程：powershell -File backend\target\stop-patient-card.ps1
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$arg = '-jar "' + (Join-Path $PSScriptRoot 'patient-card-0.0.2.jar') + '"'
+$arg = '-jar "' + (Join-Path $PSScriptRoot 'patient-card-0.0.3.jar') + '"'
 $arg += ' --spring.config.additional-location=file:' + ($root -replace '\\', '/') + '/config/'
 $arg += ' --mongo.host=127.0.0.1 --mongo.port=27017 --mongo.username= --mongo.password='
 $arg += ' --mongo.center.database=DataCenter --vte.enabled=false'

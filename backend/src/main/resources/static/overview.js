@@ -81,6 +81,30 @@
     return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  /**
+   * 新收标识（卡头配色）：入科时间落在 [昨日 08:00, 今日 08:00)。
+   * 以后端 newAdmission24h 为准；旧后端/离线演示缺该字段时按 asOf 在前端兜底计算。
+   */
+  function isNew24(p) {
+    if (typeof p.newAdmission24h === 'boolean') return p.newAdmission24h;
+    const t = toDate(p.admissionTime);
+    if (!t) return false;
+    const snap = state.snapshot || {};
+    let from = toDate(snap.newAdmitFrom);
+    let to = toDate(snap.newAdmitTo);
+    if (!from || !to) {
+      // 固定按北京时间（UTC+8，无夏令时）计算，不受本机时区影响；asOf 为北京时间字符串
+      const BJ = 8 * 3600 * 1000;
+      const asOfText = String(snap.asOf || '').trim().replace(' ', 'T');
+      const base = (asOfText && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(asOfText) ? toDate(asOfText + '+08:00') : toDate(asOfText))
+        || new Date();
+      const bj = new Date(base.getTime() + BJ); // 用 UTC 字段读取北京时间的年月日
+      to = new Date(Date.UTC(bj.getUTCFullYear(), bj.getUTCMonth(), bj.getUTCDate(), 8, 0, 0) - BJ);
+      from = new Date(to.getTime() - 24 * 3600 * 1000);
+    }
+    return t >= from && t < to;
+  }
+
   // ================= 交班视图（只换展示，不换统计口径） =================
   const VIEW_CONFIG = {
     both: {
@@ -133,7 +157,7 @@
     vent: { label: '有创通气', test: (p) => !!p.ventilator },
     shock: { label: '休克/升压药', test: (p) => !!p.vasoactive },
     critical: { label: '极危重', test: (p) => severityScore(p) >= 6 || (p.criticalPending || 0) > 0 },
-    new: { label: '新入科', test: (p) => !!p.newAdmission },
+    new: { label: '新入科', test: (p) => isNew24(p) },
   };
 
   // ================= 提示 / 状态层 =================
@@ -800,7 +824,8 @@
     // 指标「管道高风险」仍在底栏辅助指标中可下钻。
 
     // 收治类型（灰/蓝）
-    if (p.newAdmission) out.push(chip('chip-info', '新收', '', `入科 ${fmtTime(p.admissionTime)}`));
+    // 已在卡头以新收配色+胶囊标识的，不再重复本行小标签
+    if (p.newAdmission && !isNew24(p)) out.push(chip('chip-info', '新收', '', `入科 ${fmtTime(p.admissionTime)}`));
     if (p.surgeryAdmission) out.push(chip('chip-mute', '术', '', '手术入科'));
     if (p.transferIn) out.push(chip('chip-mute', '转', '', '转入入科'));
 
@@ -874,7 +899,8 @@
 
   function patientCard(p) {
     const el = document.createElement('div');
-    el.className = 'p-card';
+    const new24 = isNew24(p);
+    el.className = new24 ? 'p-card is-new24' : 'p-card';
     el.dataset.bed = p.bed || '';
     el.dataset.pid = p.id || '';
     if (state.pinnedId === p.id || state.hoverId === p.id) el.classList.add('is-active');
@@ -885,7 +911,11 @@
     const daysTitle = longStay
       ? `ICU 住院已达 ${p.icuDays} 天（阈值 ${snap.longStayDays} 天），晨会重点评估 MDT / 脱机与营养`
       : `入科 ${fmtTime(p.admissionTime)}`;
-    const daysPill = p.icuDays == null ? ''
+    const newPill = new24
+      ? `<span class="pill pill-new" title="新收（昨日08:00~今日08:00） · 入科 ${esc(fmtTime(p.admissionTime))}">`
+        + `新收 ${esc(fmtShort(p.admissionTime).slice(6))}</span>`
+      : '';
+    const daysPill = new24 ? newPill : p.icuDays == null ? ''
       : `<span class="pill pill-days${longStay ? ' long' : ''}" title="${esc(daysTitle)}">`
         + `入科${p.icuDays}天</span>`
       + (longStay ? `<span class="pill pill-days long" title="${esc(daysTitle)}">长程</span>` : '');

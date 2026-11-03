@@ -33,6 +33,12 @@
   --mute-bg: #F1F5F9;   --mute-bd: #E2E8F0;   --mute-tx: #64748B;
 
   --t: .15s;
+
+  /* 颜色标识（可在「配色」面板实时调整，overview-theme.js 写入） */
+  --head-bg: #5392FF;  --head-bg-2: #5392FF;   /* 普通卡头 */
+  --new-head: #0EA5A4; --new-head-2: #14B8A6;  /* 新收卡头（昨日8点~今日8点） */
+  --new-pill-tx: #059669; --new-pill-ring: rgba(5, 150, 105, .22);
+  --long-bg: #FDE68A;  --long-bd: #FCD34D; --long-tx: #7C2D12; /* 长程胶囊 */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -321,7 +327,8 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
   row-gap: 4px;
   padding: 7px 8px 7px;
   min-width: 0;
-  background: #5392FF;
+  background: var(--head-bg);
+  background: linear-gradient(90deg, var(--head-bg), var(--head-bg-2));
   color: #fff;
 }
 .p-bed {
@@ -377,7 +384,32 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
 }
 .p-head .pill-iso { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .4); color: #fff; font-weight: 500; }
 .p-head .pill-days { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .3); color: #fff; }
-.p-head .pill-days.long { background: #FDE68A; border-color: #FCD34D; color: #7C2D12; font-weight: 500; }
+.p-head .pill-days.long { background: var(--long-bg); border-color: var(--long-bd); color: var(--long-tx); font-weight: 500; }
+/* 新收：卡头整块换色 + 白底胶囊（入科时间） */
+.p-card.is-new24 .p-head {
+  background: var(--new-head);
+  background: linear-gradient(90deg, var(--new-head), var(--new-head-2));
+}
+.p-head .pill-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fff;
+  border-color: #fff;
+  color: var(--new-pill-tx);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .14);
+}
+.p-head .pill-new::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--new-pill-tx);
+  box-shadow: 0 0 0 2px var(--new-pill-ring);
+}
+.p-head-right .pill-new { flex: none; }
 /* 其它区域胶囊保持原色（非头部） */
 .pill-iso { background: var(--iso-bg); border-color: var(--iso-bd); color: var(--iso-tx); font-weight: 500; }
 /* 隔离类型标准色 */
@@ -854,7 +886,8 @@ body.handover-mode .kpi-item.clickable:hover { background: transparent; }
   @page { size: A4 landscape; margin: 8mm; }
   html, body { height: auto; overflow: visible; background: #fff; }
   .actions, .quick-filter, .aux-bar, #groupsToolbar, .state-overlay,
-  .toast, .modal-mask, .drawer-mask, .insp-actions { display: none !important; }
+  .toast, .modal-mask, .drawer-mask, .insp-actions, .theme-panel { display: none !important; }
+  .p-head, .pill-new { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #mainArea { display: block; padding: 8px 0; }
   #groupsPane, .panel { border-color: #CBD5E1; box-shadow: none; break-inside: auto; }
   #groupsScroll, .todo-list, .inspector { overflow: visible; height: auto; }
@@ -863,3 +896,137 @@ body.handover-mode .kpi-item.clickable:hover { background: transparent; }
   .p-card { break-inside: avoid; box-shadow: none; transform: none !important; }
   .group-block.collapsed .patient-grid { display: grid; }
 }
+
+/* ---------- 配色面板（右侧悬浮，不遮罩，便于对照整屏实时效果） ---------- */
+.theme-panel {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  bottom: 12px;
+  width: 384px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
+  overflow: hidden;
+}
+.theme-panel[hidden] { display: none; }
+.tp-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tp-sub { flex: 1; font-size: 11.5px; font-weight: 400; color: var(--ink-4); }
+.tp-preview {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.tp-card { min-height: 0; cursor: default; }
+.tp-card:hover { transform: none; }
+.tp-body { padding: 7px 9px; font-size: 12px; color: var(--ink-3); }
+.tp-list { flex: 1; overflow-y: auto; padding: 4px 14px 8px; }
+.tp-item { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.tp-item:last-child { border-bottom: 0; }
+.tp-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tp-item-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tp-item-title b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.tp-item-title small { font-size: 11px; color: var(--ink-4); line-height: 1.4; }
+.tp-picker {
+  flex: none;
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.tp-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+.tp-picker::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.tp-hex {
+  flex: none;
+  width: 84px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 500 13px/1 ui-monospace, Consolas, monospace;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.tp-hex:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(2, 132, 199, .18); }
+.tp-hex.invalid { border-color: var(--danger-tx); box-shadow: 0 0 0 2px rgba(220, 38, 38, .15); }
+.tp-slider {
+  display: grid;
+  grid-template-columns: 44px 1fr 38px;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.tp-slider b { font-weight: 500; text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tp-slider input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  cursor: pointer;
+}
+.tp-slider input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .35), 0 1px 3px rgba(15, 23, 42, .3);
+}
+.tp-slider input[type=range]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .35);
+}
+.tp-item-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.tp-presets { display: flex; gap: 5px; }
+.tp-swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, .12);
+}
+.tp-swatch:hover { border-color: rgba(15, 23, 42, .12); transform: scale(1.12); }
+.tp-swatch.on { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--ink-3); }
+.tp-contrast { margin-left: auto; font-size: 11px; white-space: nowrap; }
+.tp-contrast.good { color: #059669; }
+.tp-contrast.ok { color: var(--warn-tx); }
+.tp-contrast.bad { color: var(--danger-tx); }
+.tp-link { padding: 2px 6px; font-size: 11.5px; border-color: transparent; color: var(--ink-3); background: none; }
+.tp-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--sub);
+}
+.tp-foot .tp-gap { flex: 1; }
+.tp-foot button { padding: 5px 14px; }

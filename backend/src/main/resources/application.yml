@@ -40,6 +40,15 @@ mongo:
 
 # 科室概览 / 大交班大屏
 overview:
+  # 大屏卡片颜色标识（缺省值；实际以 config/application.yml 为准，页面「配色」面板保存会回写该文件）
+  theme:
+    new-head: "#0EA5A4"     # 新收卡头（北京时间 昨日08:00 ~ 今日08:00 入科）
+    new-pill: "#059669"     # 新收标签文字
+    normal-head: "#5392FF"  # 普通卡头
+    long-bg: "#FDE68A"      # 长程标签底色
+    long-tx: "#7C2D12"      # 长程标签文字
+    edit-key: ""            # 非空时保存配色需输入此口令
+    config-file: ""         # 留空自动定位 JAR 同级 config/application.yml
   refresh-seconds: 60
   snapshot-ttl-seconds: 600
   ventilator:

@@ -7,6 +7,7 @@ import com.patientcard.patient_card_backend.model.overview.OverviewPatient;
 import com.patientcard.patient_card_backend.model.overview.OverviewScope;
 import com.patientcard.patient_card_backend.model.overview.OverviewSnapshot;
 import com.patientcard.patient_card_backend.service.DeptOverviewService;
+import com.patientcard.patient_card_backend.service.OverviewThemeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,9 +33,43 @@ public class OverviewController {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final DeptOverviewService overviewService;
+    private final OverviewThemeService themeService;
 
-    public OverviewController(DeptOverviewService overviewService) {
+    public OverviewController(DeptOverviewService overviewService, OverviewThemeService themeService) {
         this.overviewService = overviewService;
+        this.themeService = themeService;
+    }
+
+    /** 大屏统一配色（读 config/application.yml 的 overview.theme） */
+    @GetMapping("/theme")
+    public Map<String, Object> getTheme() {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("colors", themeService.current());
+        body.put("keyRequired", themeService.keyRequired());
+        return body;
+    }
+
+    /** 保存统一配色：回写 config/application.yml，所有大屏刷新后生效 */
+    @PutMapping("/theme")
+    public ResponseEntity<?> saveTheme(@RequestBody Map<String, String> colors,
+                                       @RequestHeader(value = "X-Theme-Key", required = false) String key) {
+        if (!themeService.checkKey(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", key == null || key.isEmpty() ? "需要配色口令" : "配色口令不正确",
+                            "keyRequired", true));
+        }
+        try {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("colors", themeService.save(colors));
+            body.put("keyRequired", themeService.keyRequired());
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("保存大屏配色失败", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "保存失败：" + ex.getMessage()));
+        }
     }
 
     /**

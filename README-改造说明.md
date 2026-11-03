@@ -269,3 +269,13 @@ iframe.contentWindow.postMessage({ deptCode: '112' }, targetOrigin);
 ```javascript
 { deptCode: '112', status: 'admitted' }
 ```
+
+## 新收标识与统一配色
+
+- 新收：入科时间（`icuAdmissionTime`）落在**北京时间昨日 08:00（含）~ 今日 08:00（不含）**的病人，
+  卡头整块显示新收色并带「新收 HH:mm」标签；字段 `newAdmission24h`，不随「上一班/最近24小时」切换。
+- 配色：大屏右上角「配色」按钮，可用色相/饱和度/亮度滑块、取色器或输入 `#色号` 调整，实时预览。
+  保存后回写 `config/application.yml` 的 `overview.theme` 段（写前备份为 `application.yml.bak`，
+  只改颜色行，其它配置与注释不动），所有大屏刷新或 60 秒内自动同步。
+- 手工修改 `overview.theme` 的颜色行刷新页面即生效；`edit-key` 非空时保存需输入口令（改口令需重启服务）。
+- 接口：`GET/PUT /api/v1/icu-overview/theme`（PUT 口令放请求头 `X-Theme-Key`）。

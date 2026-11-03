@@ -12,6 +12,10 @@ public class OverviewSnapshot {
     private String asOf;
     private Date eventFrom;
     private Date eventTo;
+    /** 新收标识固定窗：昨日 08:00（含） */
+    private Date newAdmitFrom;
+    /** 新收标识固定窗：今日 08:00（不含） */
+    private Date newAdmitTo;
     /** prevShift | last24h | custom | default */
     private String eventWindowPreset;
     /** 事件窗口径中文名，直接上顶栏 */
