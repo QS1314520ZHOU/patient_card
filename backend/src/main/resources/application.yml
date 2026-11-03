@@ -42,7 +42,8 @@ mongo:
 overview:
   # 大屏卡片颜色标识（缺省值；实际以 config/application.yml 为准，页面「配色」面板保存会回写该文件）
   theme:
-    new-head: "#0EA5A4"     # 昨日收治卡头（北京时间 昨日08:00 ~ 今日08:00 入科）
+    new-head: "#10B9A0"     # 昨日收治卡头渐变终点色（北京时间 昨日08:00 ~ 今日08:00 入科，由普通蓝渐变到此色）
+    new-pill: "#059669"     # 卡头白底「新收 HH:mm」标签文字
     normal-head: "#5392FF"  # 普通卡头
     long-bg: "#FDE68A"      # 长程标签底色
     long-tx: "#7C2D12"      # 长程标签文字

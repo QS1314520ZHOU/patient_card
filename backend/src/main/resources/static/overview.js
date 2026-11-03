@@ -910,7 +910,9 @@
     const daysTitle = longStay
       ? `ICU 住院已达 ${p.icuDays} 天（阈值 ${snap.longStayDays} 天），晨会重点评估 MDT / 脱机与营养`
       : `入科 ${fmtTime(p.admissionTime)}`;
-    const daysPill = p.icuDays == null ? ''
+    const newPill = `<span class="pill pill-new" title="昨日08:00~今日08:00 入科 · ${esc(fmtTime(p.admissionTime))}">`
+      + `新收 ${esc(fmtShort(p.admissionTime).slice(6))}</span>`;
+    const daysPill = new24 ? newPill : p.icuDays == null ? ''
       : `<span class="pill pill-days${longStay ? ' long' : ''}" title="${esc(daysTitle)}">`
         + `入科${p.icuDays}天</span>`
       + (longStay ? `<span class="pill pill-days long" title="${esc(daysTitle)}">长程</span>` : '');

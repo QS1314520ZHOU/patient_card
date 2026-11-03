@@ -36,7 +36,7 @@
 
   /* 颜色标识（可在「配色」面板实时调整，overview-theme.js 写入） */
   --head-bg: #5392FF;  --head-bg-2: #5392FF;   /* 普通卡头 */
-  --new-head: #0EA5A4; --new-head-2: #14B8A6;  /* 新收卡头（昨日8点~今日8点） */
+  --new-head: #10B9A0; --new-head-2: #10B9A0;  /* 昨日收治卡头渐变终点色（昨日8点~今日8点） */
   --new-pill-tx: #059669; --new-pill-ring: rgba(5, 150, 105, .22);
   --long-bg: #FDE68A;  --long-bd: #FCD34D; --long-tx: #7C2D12; /* 长程胶囊 */
 }
@@ -388,7 +388,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid rgba(2, 132, 199
 /* 新收：卡头整块换色 + 白底胶囊（入科时间） */
 .p-card.is-new24 .p-head {
   background: var(--new-head);
-  background: linear-gradient(90deg, var(--new-head), var(--new-head-2));
+  background: linear-gradient(90deg, var(--head-bg) 0%, var(--head-bg) 45%, var(--new-head) 100%);
 }
 .p-head .pill-new {
   display: inline-flex;

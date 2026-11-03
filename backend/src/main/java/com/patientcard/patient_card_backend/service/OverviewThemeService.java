@@ -29,10 +29,12 @@ public class OverviewThemeService {
 
     static {
         KEYS.put("newHead", "new-head");
+        KEYS.put("newPill", "new-pill");
         KEYS.put("normalHead", "normal-head");
         KEYS.put("longBg", "long-bg");
         KEYS.put("longTx", "long-tx");
-        DEFAULTS.put("newHead", "#0EA5A4");
+        DEFAULTS.put("newHead", "#10B9A0");
+        DEFAULTS.put("newPill", "#059669");
         DEFAULTS.put("normalHead", "#5392FF");
         DEFAULTS.put("longBg", "#FDE68A");
         DEFAULTS.put("longTx", "#7C2D12");

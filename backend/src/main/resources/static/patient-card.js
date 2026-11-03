@@ -276,7 +276,9 @@
         <div class="bed">${esc(bed)}床</div>
         <div class="name">${esc(p.name || '—')}</div>
         <div class="head-right">
-          <span class="pill-days" title="入科 ${days} 天${isNew ? '（昨日08:00~今日08:00 入科）' : ''}">入科${days}天</span>
+          ${isNew
+            ? `<span class="pill-new" title="昨日08:00~今日08:00 入科 · ${esc(admit)}">新收 ${esc(admit.length > 6 ? admit.slice(6) : admit)}</span>`
+            : `<span class="pill-days" title="入科 ${days} 天">入科${days}天</span>`}
           ${longStay ? `<span class="pill-days long" title="ICU 住院已达 ${days} 天，晨会重点评估">长程</span>` : ''}
         </div>
       </header>

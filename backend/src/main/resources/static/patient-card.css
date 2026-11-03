@@ -11,7 +11,7 @@
   --ok: #3A9A6A;
   /* 颜色标识（「配色」面板实时调整，保存到 config/application.yml 的 overview.theme） */
   --head-bg: #5392FF;  --head-bg-2: #5392FF;
-  --new-head: #0EA5A4; --new-head-2: #14B8A6;
+  --new-head: #10B9A0; --new-head-2: #10B9A0;
   --new-pill-tx: #059669; --new-pill-ring: rgba(5, 150, 105, .22);
   --long-bg: #FDE68A;  --long-bd: #FCD34D; --long-tx: #7C2D12;
 }
@@ -105,10 +105,10 @@ body {
   background: linear-gradient(90deg, var(--head-bg), var(--head-bg-2));
   color: #fff;
 }
-/* 新收（北京时间 昨日08:00 ~ 今日08:00）：卡头整块换色 */
+/* 昨日收治（北京时间 昨日08:00 ~ 今日08:00）：卡头 蓝→青 渐变 + 白底「新收 HH:mm」胶囊 */
 .card.is-new24 .card-head {
   background: var(--new-head);
-  background: linear-gradient(90deg, var(--new-head), var(--new-head-2));
+  background: linear-gradient(90deg, var(--head-bg) 0%, var(--head-bg) 45%, var(--new-head) 100%);
 }
 .pill-new {
   display: inline-flex; align-items: center; gap: 4px;
