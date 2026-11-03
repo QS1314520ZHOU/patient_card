@@ -187,14 +187,23 @@
     return '';
   }
 
+  /**
+   * 饮食：源数据来自下拉多选，常见 ",流质" / "禁食,禁饮," 这类首尾或连续分隔符；
+   * 按分隔符拆分→去空→去重→缩写，多项用「、」连接；全空返回空串（不出标签）
+   */
+  const DIET_SHORT = {
+    糖尿病饮食: '糖尿病', 低盐饮食: '低盐', 低蛋白饮食: '低蛋白',
+    肠内营养: '肠内', 鼻饲饮食: '鼻饲', 流质饮食: '流质',
+  };
   function dietLabel(diet) {
+    const seen = new Set();
     return String(diet || '')
-      .replace('糖尿病饮食', '糖尿病')
-      .replace('低盐饮食', '低盐')
-      .replace('低蛋白饮食', '低蛋白')
-      .replace('肠内营养', '肠内')
-      .replace('鼻饲饮食', '鼻饲')
-      .replace('流质饮食', '流质');
+      .split(/[,，、;；|/\s]+/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .map((x) => DIET_SHORT[x] || x)
+      .filter((x) => (seen.has(x) ? false : seen.add(x)))
+      .join('、');
   }
 
   function isolationTag(raw) {
@@ -221,7 +230,8 @@
     if (isHigh(p.pipeRisk)) soft.push({ t: '导管高危', c: 'soft' });
     if (isHigh(p.nutritionRisk)) soft.push({ t: '营养', c: 'soft' });
     if (isHigh(p.vteRisk)) soft.push({ t: 'VTE', c: 'soft' });
-    if (p.diet) soft.push({ t: dietLabel(p.diet), c: 'soft' });
+    const diet = dietLabel(p.diet);
+    if (diet) soft.push({ t: diet, c: 'soft', title: `饮食：${diet}` });
     if (p.surgeryAdmission) soft.push({ t: '术', c: 'mute' });
     if (p.transferIn) soft.push({ t: '转', c: 'mute' });
     return { alert, soft };
