@@ -16,6 +16,7 @@
       <div class="actions">
         <button class="btn" type="button" id="btnStats">统计</button>
         <button class="btn" type="button" id="btnHandover" title="交班模式：停止自动滚动，固定床位顺序便于讲解">交班模式</button>
+        <button class="btn" type="button" id="btnAiHandover">AI交班</button>
         <button class="btn" type="button" id="btnGroupSettings" title="配置当前科室的医疗组显示名称">组别配置</button>
         <button class="btn" type="button" id="btnTheme" title="配置卡片颜色标识（实时预览，所有大屏统一）">配色</button>
         <button class="btn primary" type="button" id="btnRefresh">刷新</button>
@@ -61,9 +62,21 @@
       <span class="right">本屏用于交班辅助，非床旁实时监护</span>
     </div>
   </div>
+  <dialog id="aiHandoverDialog" class="ai-dialog" aria-labelledby="aiTitle">
+    <div class="ai-head"><div><h2 id="aiTitle">AI交班草稿</h2><p>病程、体征和相关历史 · 请逐条核对</p></div><button id="aiClose" class="ai-close" type="button" aria-label="关闭">×</button></div>
+    <div class="ai-body">
+      <p class="ai-notice">仅供交班参考，不替代医护判断或正式病历。请核实患者、来源和时间，缺失不等于正常。</p>
+      <div class="ai-controls"><label for="aiPatient">患者</label><select id="aiPatient"></select><button id="aiLoad" type="button">读取资料</button><button id="aiGenerate" type="button" class="ai-primary">生成交班草稿</button></div>
+      <p id="aiStatus" class="ai-status" role="status"></p><div id="aiWarnings" class="ai-warnings"></div>
+      <div class="ai-layout"><section><h3>交班草稿</h3><p class="ai-tip">可修改；核对状态仅保留在当前页面，关闭后清除，不记录核对人。</p><textarea id="aiDraft" rows="16" placeholder="生成后在此核对、修改" aria-label="交班草稿"></textarea><button id="aiConfirm" type="button" disabled>标记已核对</button><span id="aiConfirmed" role="status"></span></section>
+      <section><h3>资料与来源</h3><p class="ai-tip">按来源编号对照草稿；标记截断的原文仅部分送入模型。</p><div id="aiSources"></div></section></div>
+    </div>
+  </dialog>
+  <link rel="stylesheet" href="handover.css?v=1">
   <link rel="stylesheet" href="group-settings.css?v=1">
   <script src="patient-card.js?v=6"></script>
   <script src="group-settings.js?v=1"></script>
+  <script src="handover.js?v=1"></script>
   <script src="overview-theme.js?v=5"></script>
 </body>
 </html>
