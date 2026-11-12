@@ -11,8 +11,8 @@ import java.util.concurrent.Semaphore;
 @RestController
 @RequestMapping("/api/handover")
 public class HandoverController {
- private final HandoverData data;private final HandoverAi ai;private final Semaphore slots=new Semaphore(3);
- public HandoverController(HandoverData data,HandoverAi ai){this.data=data;this.ai=ai;}
+ private final HandoverData data;private final HandoverAi ai;private final HandoverTrendService trends;private final Semaphore slots=new Semaphore(3);
+ public HandoverController(HandoverData data,HandoverAi ai,HandoverTrendService trends){this.data=data;this.ai=ai;this.trends=trends;}
  @GetMapping("/snapshot") public ResponseEntity<?> snapshot(@RequestParam String dept,@RequestParam String patient,HttpServletRequest req){
   if(!sameOrigin(req))return response(403,Map.of("error","不允许跨站访问"));
   if(!slots.tryAcquire())return response(429,Map.of("error","交班请求较多，请稍后再试"));
@@ -23,6 +23,11 @@ public class HandoverController {
   if(!slots.tryAcquire())return response(429,Map.of("error","交班请求较多，请稍后再试"));
   try {HandoverData.Snapshot s=data.load(dept,patient);HandoverAi.Result r=ai.generate(s);data.verify(dept,s);return response(200,r);}
   catch(IllegalArgumentException|IllegalStateException e){return response(400,Map.of("error",safeMessage(e)));}catch(Exception e){return response(500,Map.of("error","生成失败，请核对院内服务"));}finally{slots.release();}
+ }
+ @PostMapping("/trends") public ResponseEntity<?> trends(@RequestParam String dept,@RequestParam String patient,HttpServletRequest req){
+  if(!sameOrigin(req))return response(403,Map.of("error","不允许跨站访问"));
+  if(!slots.tryAcquire())return response(429,Map.of("error","交班请求较多，请稍后再试"));
+  try{return response(200,trends.load(dept,patient));}catch(IllegalArgumentException|IllegalStateException e){return response(400,Map.of("error",safeMessage(e)));}catch(Exception e){return response(500,Map.of("error","趋势资料读取失败，请核对院内服务"));}finally{slots.release();}
  }
  private static String safeMessage(Exception e){
   String m=e.getMessage();
