@@ -329,6 +329,7 @@
       counts.set(k, (counts.get(k) || 0) + 1);
     });
     const keys = [...counts.keys()].sort(compareGroup);
+    if (groupFilter && !counts.has(groupFilter)) groupFilter = '';
     box.innerHTML = [
       `<button class="chip-btn ${groupFilter ? '' : 'active'}" type="button" data-g="">全部</button>`,
       ...keys.map((k) =>
@@ -782,6 +783,9 @@
       load();
     }
   });
+
+  window.patientCardGroupContext = () => deptCode;
+  window.patientCardReload = () => { groupFilter = ''; return load(); };
 
   document.getElementById('btnStats').addEventListener('click', () => {
     if (drawerOpen) { closeDrawer(); toast('已收起统计栏'); }
