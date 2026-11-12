@@ -29,8 +29,8 @@ public class HandoverData {
   Map.entry("param_ibp_s","有创收缩压"),Map.entry("param_ibp_m","有创平均压"),Map.entry("param_ibp_d","有创舒张压"));
  public HandoverData(MongoTemplate mongo,BlbcjlClient client,HandoverConfig config,@Qualifier("centerMongoTemplate") ObjectProvider<MongoTemplate> center,PatientRiskService risks){this.mongo=mongo;this.client=client;this.config=config;this.center=center;this.risks=risks;}
  public static class Source {public String id, kind, title, time, text; public boolean window,stale,excerpted; public int sentChars;}
- public static class Snapshot {@com.fasterxml.jackson.annotation.JsonIgnore public String mrn; @com.fasterxml.jackson.annotation.JsonIgnore public Date admission,icuAdmission; public String from,to,asOf,patientId;public List<Source> sources=new ArrayList<>();public List<String> warnings=new ArrayList<>();}
- public void verify(String dept, Snapshot snapshot){Patient p=patient(dept,snapshot.patientId);if(!Objects.equals(snapshot.mrn,p.getMrn())||!Objects.equals(snapshot.admission,p.getAdmissionTime())||!Objects.equals(snapshot.icuAdmission,p.getIcuAdmissionTime()))throw new IllegalStateException("患者住院或入科信息已改变，请重新打开");}
+ public static class Snapshot {@com.fasterxml.jackson.annotation.JsonIgnore public String mrn,hisPid; @com.fasterxml.jackson.annotation.JsonIgnore public Date admission,icuAdmission; public String from,to,asOf,patientId;public List<Source> sources=new ArrayList<>();public List<String> warnings=new ArrayList<>();}
+ public void verify(String dept, Snapshot snapshot){Patient p=patient(dept,snapshot.patientId);if(!Objects.equals(snapshot.mrn,p.getMrn())||!Objects.equals(snapshot.hisPid,p.getHisPid())||!Objects.equals(snapshot.admission,p.getAdmissionTime())||!Objects.equals(snapshot.icuAdmission,p.getIcuAdmissionTime()))throw new IllegalStateException("患者住院或入科信息已改变，请重新打开");}
  Patient patient(String dept,String id){
   if(dept==null||dept.isBlank()||id==null||id.isBlank()||dept.length()>100||id.length()>100)throw new IllegalArgumentException("患者或科室参数无效");
   Patient p=mongo.findOne(Query.query(Criteria.where("_id").is(id).and("deptCode").is(dept).and("status").is("admitted")),Patient.class,patients);
@@ -45,7 +45,7 @@ public class HandoverData {
   // 院内 BLBCJL 可按住院号查询全部病区；空 BQDM 不是缺少配置。
   ward = ward == null ? "" : ward.trim();
   Instant now=Instant.now(); Window win=new Window(now); Snapshot out=new Snapshot();
-  out.patientId=id;out.mrn=mrn;out.admission=admission;out.icuAdmission=first.getIcuAdmissionTime();out.from=win.from.toString();out.to=win.to.toString();out.asOf=win.asOf.toString();
+  out.patientId=id;out.mrn=mrn;out.hisPid=first.getHisPid();out.admission=admission;out.icuAdmission=first.getIcuAdmissionTime();out.from=win.from.toString();out.to=win.to.toString();out.asOf=win.asOf.toString();
   List<NoteParser.Note> notes=NoteParser.parse(client.fetch(mrn,ward),mrn,ward,1000,100000);
   LocalDateTime admitted=LocalDateTime.ofInstant(admission.toInstant(),ZONE);
   int unknown=0,outside=0,index=1;
@@ -75,7 +75,7 @@ public class HandoverData {
   if(start!=null) addStructured(out,first,start,now,win,index);
   else out.warnings.add("缺少入科时间，医嘱、管路、风险和出入量未读取。");
   Patient last=patient(dept,id);
-  if(!mrn.equals(last.getMrn()) || !Objects.equals(admission,last.getAdmissionTime()) || !Objects.equals(first.getIcuAdmissionTime(),last.getIcuAdmissionTime()))throw new IllegalStateException("患者住院或入科信息已改变，请重新打开");
+  if(!mrn.equals(last.getMrn()) || !Objects.equals(first.getHisPid(),last.getHisPid()) || !Objects.equals(admission,last.getAdmissionTime()) || !Objects.equals(first.getIcuAdmissionTime(),last.getIcuAdmissionTime()))throw new IllegalStateException("患者住院或入科信息已改变，请重新打开");
   return out;
  }
  private void addStructured(Snapshot out,Patient p,Date start,Instant now,Window win,int initial){
