@@ -16,6 +16,7 @@
       <div class="actions">
         <button class="btn" type="button" id="btnStats">统计</button>
         <button class="btn" type="button" id="btnHandover" title="交班模式：停止自动滚动，固定床位顺序便于讲解">交班模式</button>
+        <button class="btn" type="button" id="btnGroupSettings" title="配置当前科室的医疗组显示名称">组别配置</button>
         <button class="btn" type="button" id="btnTheme" title="配置卡片颜色标识（实时预览，所有大屏统一）">配色</button>
         <button class="btn primary" type="button" id="btnRefresh">刷新</button>
       </div>
@@ -60,7 +61,9 @@
       <span class="right">本屏用于交班辅助，非床旁实时监护</span>
     </div>
   </div>
-  <script src="patient-card.js?v=5"></script>
+  <link rel="stylesheet" href="group-settings.css?v=1">
+  <script src="patient-card.js?v=6"></script>
+  <script src="group-settings.js?v=1"></script>
   <script src="overview-theme.js?v=5"></script>
 </body>
 </html>
