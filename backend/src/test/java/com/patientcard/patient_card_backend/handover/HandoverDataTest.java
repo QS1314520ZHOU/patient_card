@@ -37,4 +37,14 @@ class HandoverDataTest {
   HandoverData.Snapshot result=d.load("A","p1");verify(client).fetch("synthetic-1","WARD-A");assertEquals(0,result.sources.size());assertTrue(result.warnings.stream().anyMatch(x->x.contains("1 份病程无法识别")));
  }
 
+ @SuppressWarnings("unchecked") @Test void defaultRequestUsesMrnAndEmptyBqdm() {
+  MongoTemplate mongo=mock(MongoTemplate.class);BlbcjlClient client=mock(BlbcjlClient.class);HandoverConfig cfg=new HandoverConfig();cfg.setEnabled(true);
+  ObjectProvider<MongoTemplate> provider=mock(ObjectProvider.class);PatientRiskService risk=mock(PatientRiskService.class);HandoverData d=new HandoverData(mongo,client,cfg,provider,risk);
+  ReflectionTestUtils.setField(d,"patients","patient");ReflectionTestUtils.setField(d,"defaultBqdm","");
+  Patient p=new Patient();p.setId("synthetic-p1");p.setMrn("test-mrn");p.setAdmissionTime(Date.from(Instant.now().minusSeconds(86400*5)));
+  when(mongo.findOne(any(Query.class),eq(Patient.class),eq("patient"))).thenReturn(p);
+  when(client.fetch("test-mrn","")).thenReturn("{\"code\":0,\"data\":[]}".getBytes(StandardCharsets.UTF_8));
+  assertNotNull(d.load("ANY_DEPT","synthetic-p1"));verify(client).fetch("test-mrn","");
+ }
+
 }
