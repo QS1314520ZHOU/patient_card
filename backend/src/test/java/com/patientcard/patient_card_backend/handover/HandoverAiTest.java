@@ -16,7 +16,7 @@ class HandoverAiTest {
   try{HandoverAi ai=new HandoverAi(mapper);for(var e:Map.of("base","http://127.0.0.1:"+server.getAddress().getPort(),"embeddingPath","/embeddings","chatPath","/chat","model","test-model","embeddingModel","test-embedding","key","").entrySet())ReflectionTestUtils.setField(ai,e.getKey(),e.getValue());
    HandoverData.Source recent=source("N1","当班合成记录",true),history=source("N2","历史合成记录"+"x".repeat(2000),false);
    HandoverData.Snapshot snapshot=new HandoverData.Snapshot();snapshot.from="2026-11-11T08:00";snapshot.to="2026-11-12T08:00";snapshot.asOf="2026-11-12T12:00";snapshot.sources.add(recent);snapshot.sources.add(history);
-   HandoverAi.Result result=ai.generate(snapshot);assertEquals(2,inputs.size());assertTrue(inputs.get(0).contains("当班合成记录"));assertTrue(inputs.get(1).contains("历史合成记录"));assertEquals(history.text,result.sources.get(1).text);assertTrue(result.sources.get(1).excerpted);assertEquals(1500,result.sources.get(1).sentChars);assertTrue(result.draft.contains("[N1]"));
+   HandoverAi.Result result=ai.generate(snapshot);assertEquals(2,inputs.size());assertTrue(inputs.get(0).contains("当班合成记录"));assertTrue(inputs.get(1).contains("历史合成记录"));assertEquals(history.text,result.sources.get(1).text);assertTrue(result.sources.get(1).excerpted);assertEquals(1500,result.sources.get(1).sentChars);assertFalse(result.draft.contains("[N1]"));assertTrue(result.draft.contains("本班记录"));
   }finally{server.stop(0);}
  }
  @Test void cosineHandlesZeroAndOrder(){assertEquals(0,HandoverAi.cosine(new double[]{0,0},new double[]{1,0}));assertTrue(HandoverAi.cosine(new double[]{1,0},new double[]{1,0})>HandoverAi.cosine(new double[]{1,0},new double[]{0,1}));}
@@ -42,6 +42,11 @@ class HandoverAiTest {
    finish[0]="content_filter";assertTrue(assertThrows(IllegalStateException.class,()->ai.generate(snap)).getMessage().contains("过滤"));
    ReflectionTestUtils.setField(ai,"maxTokens",8193);int before=requests.size();assertTrue(assertThrows(IllegalStateException.class,()->ai.generate(snap)).getMessage().contains("参数无效"));assertEquals(before,requests.size());
   }finally{server.stop(0);}
+ }
+
+ @Test void plainDraftRemovesMarkdownAndInternalReferencesWithoutDroppingContent(){
+  String output=HandoverAi.plainDraft("### 1. 病情变化\n- **心率：** 60次/分 [N1][V2]\n\n**待核对**\n- 出入量 [F3]");
+  assertEquals("1. 病情变化\n心率： 60次/分\n\n待核对\n出入量",output);
  }
 
 }
