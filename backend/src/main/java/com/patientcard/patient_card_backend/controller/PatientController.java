@@ -45,6 +45,9 @@ public class PatientController {
     private com.patientcard.patient_card_backend.service.CardFluidService cardFluidService;
 
     @Autowired
+    private com.patientcard.patient_card_backend.service.DepartmentGroupMappingService groupMappingService;
+
+    @Autowired
     private MongoTemplate mongoTemplate;
 
     @Value("${mongo.collections.patient:patient}")
@@ -85,6 +88,8 @@ public class PatientController {
                 Patient.class,
                 patientCollection
         );
+        java.util.Map<String, String> aliases = groupMappingService.mapping(deptCode);
+        patients.forEach(p -> p.setMedicalGroup(com.patientcard.patient_card_backend.service.DepartmentGroupMappingService.displayName(p.getMedicalGroup(), aliases)));
         patientRiskService.enrich(patients);
         cardSupportService.enrich(patients);
         cardFluidService.enrich(patients, deptCode.trim());

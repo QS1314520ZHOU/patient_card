@@ -50,6 +50,7 @@ public class DeptOverviewService {
     private final DepartmentRepository departmentRepository;
     private final ConfigBedRepository configBedRepository;
     private final CardDetailService cardDetailService;
+    private final DepartmentGroupMappingService groupMappingService;
 
     @Value("${mongo.collections.patient:patient}")
     private String patientCollection;
@@ -88,13 +89,15 @@ public class DeptOverviewService {
                                VteAssessmentService vteService,
                                DepartmentRepository departmentRepository,
                                ConfigBedRepository configBedRepository,
-                               CardDetailService cardDetailService) {
+                               CardDetailService cardDetailService,
+                               DepartmentGroupMappingService groupMappingService) {
         this.mongoTemplate = mongoTemplate;
         this.riskService = riskService;
         this.vteService = vteService;
         this.departmentRepository = departmentRepository;
         this.configBedRepository = configBedRepository;
         this.cardDetailService = cardDetailService;
+        this.groupMappingService = groupMappingService;
     }
 
     public OverviewScope resolveScope(String deptCode) {
@@ -166,6 +169,7 @@ public class DeptOverviewService {
         Set<String> ids = new HashSet<>();
         Set<String> hisPids = new HashSet<>();
         Map<String, Document> docById = new LinkedHashMap<>();
+        Map<String, String> groupAliases = groupMappingService.mapping(normalized);
         for (Document doc : docs) {
             String id = valueAsId(doc.get("_id"));
             if (id == null) {
@@ -242,7 +246,7 @@ public class DeptOverviewService {
             p.setTel(doc.getString("tel"));
             p.setAllergy(blankToNull(doc.getString("allergic")));
             p.setDiagnosis(doc.getString("clinicalDiagnosis"));
-            p.setMedicalGroup(blankToNull(doc.getString("medicalGroup")));
+            p.setMedicalGroup(blankToNull(DepartmentGroupMappingService.displayName(doc.getString("medicalGroup"), groupAliases)));
             p.setBedDoctor(blankToNull(doc.getString("bedDoctor")));
             p.setResponsibleNurse(blankToNull(doc.getString("responsibleNurse")));
             p.setAge(calcAge(doc.getDate("birthday")));

@@ -17,7 +17,7 @@
     </repositories>
     <groupId>com.patientcard</groupId>
     <artifactId>patient-card-backend</artifactId>
-    <version>0.0.9</version>
+    <version>0.0.10</version>
     <name>patient-card-backend</name>
     <description>SmartCare patient card integration</description>
     <properties>
@@ -55,7 +55,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>patient-card-0.0.9</finalName>
+        <finalName>patient-card-0.0.10</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
