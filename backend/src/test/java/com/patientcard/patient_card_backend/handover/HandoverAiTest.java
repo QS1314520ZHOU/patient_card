@@ -30,4 +30,18 @@ class HandoverAiTest {
   }finally{server.stop(0);}
  }
 
+ @Test void sendsThinkingSettingAndDistinguishesIncompleteFromFiltered() throws Exception {
+  ObjectMapper mapper=new ObjectMapper();List<com.fasterxml.jackson.databind.JsonNode> requests=new ArrayList<>();String[] finish={"stop"};
+  HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+  server.createContext("/chat",x->{requests.add(mapper.readTree(x.getRequestBody()));byte[] b=mapper.writeValueAsBytes(Map.of("choices",List.of(Map.of("finish_reason",finish[0],"message",Map.of("content","合成草稿 [N1]")))));x.getResponseHeaders().set("Content-Type","application/json");x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();});server.start();
+  try{HandoverAi ai=new HandoverAi(mapper);for(var e:Map.of("base","http://127.0.0.1:"+server.getAddress().getPort(),"chatPath","/chat","model","m","embeddingModel","e","key","").entrySet())ReflectionTestUtils.setField(ai,e.getKey(),e.getValue());
+   HandoverData.Snapshot snap=new HandoverData.Snapshot();snap.sources.add(source("N1","合成数据",true));
+   ai.generate(snap);assertEquals(3000,requests.get(0).path("max_tokens").asInt());assertFalse(requests.get(0).path("chat_template_kwargs").path("enable_thinking").asBoolean(true));
+   ReflectionTestUtils.setField(ai,"thinking","default");ReflectionTestUtils.setField(ai,"maxTokens",4096);ai.generate(snap);assertFalse(requests.get(1).has("chat_template_kwargs"));assertEquals(4096,requests.get(1).path("max_tokens").asInt());
+   ReflectionTestUtils.setField(ai,"thinking","on");finish[0]="length";assertTrue(assertThrows(IllegalStateException.class,()->ai.generate(snap)).getMessage().contains("长度上限"));assertTrue(requests.get(2).path("chat_template_kwargs").path("enable_thinking").asBoolean(false));
+   finish[0]="content_filter";assertTrue(assertThrows(IllegalStateException.class,()->ai.generate(snap)).getMessage().contains("过滤"));
+   ReflectionTestUtils.setField(ai,"maxTokens",8193);int before=requests.size();assertTrue(assertThrows(IllegalStateException.class,()->ai.generate(snap)).getMessage().contains("参数无效"));assertEquals(before,requests.size());
+  }finally{server.stop(0);}
+ }
+
 }
