@@ -287,3 +287,17 @@ iframe.contentWindow.postMessage({ deptCode: '112' }, targetOrigin);
   只改颜色行，其它配置与注释不动），所有大屏刷新或 60 秒内自动同步。
 - 手工修改 `overview.theme` 的颜色行刷新页面即生效；`edit-key` 非空时保存需输入口令（改口令需重启服务）。
 - 接口：`GET/PUT /api/v1/icu-overview/theme`（PUT 口令放请求头 `X-Theme-Key`）。
+
+### 医疗组名称按科室配置
+
+病区概览点击「组别配置」可为当前科室配置原组别和显示名称；空白显示名称表示沿用原名称。同一显示名称会合并筛选、人数统计，卡片和大交班展示也使用相同映射；患者原始数据不会被修改。配置保存在主 MongoDB 的 `patientCardGroupMappings` 集合，按科室编码隔离，客户端刷新后生效。多人同时修改时后保存者需要重新打开配置。
+
+首次启用前由管理员在外部 `config/application.yml` 增加以下内容并重启服务（已有 `overview` 段时合并，不要创建重复段；口令请使用安全渠道设置并保管，使用 ASCII 字符）：
+
+```yaml
+overview:
+  group-mapping:
+    edit-key: "replace-with-strong-ascii-secret"
+```
+
+未设置口令时禁止保存。页面保存需要输入口令，建议使用医院内网 HTTPS 和现有的访问控制；共享口令不是按科室的用户授权，部署前需由院方控制可访问和修改人员。备份数据库时应包含此集合。
