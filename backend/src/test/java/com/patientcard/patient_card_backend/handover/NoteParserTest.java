@@ -31,4 +31,13 @@ class NoteParserTest {
   Window early=new Window(Instant.parse("2026-11-11T22:00:00Z"));
   assertFalse(early.contains(LocalDateTime.of(2026,11,12,7,0)));
  }
+ @Test void emptyBqdmAcceptsSameEncounterAcrossWardsButRejectsAnotherPatient() {
+  String same="{\"code\":0,\"data\":[{\"BLH\":\"test-mrn\",\"BQDM\":\"A\",\"WBNR\":\"2026-11-11 19:54 合成记录\"},{\"BLH\":\"test-mrn\",\"BQDM\":\"B\",\"WBNR\":\"2026-11-11 20:54 合成记录\"}]}";
+  assertEquals(2,NoteParser.parse(bytes(same),"test-mrn","",10,1000).size());
+  assertThrows(IllegalArgumentException.class,()->NoteParser.parse(bytes(same),"test-mrn","A",10,1000));
+  // JSON is synthetic; a foreign BLH rejects the entire response even with an empty BQDM.
+  String foreign="{\"code\":0,\"data\":[{\"BLH\":\"test-mrn\",\"BQDM\":\"A\",\"WBNR\":\"测试\"},{\"BLH\":\"other-mrn\",\"BQDM\":\"B\",\"WBNR\":\"测试\"}]}";
+  assertThrows(IllegalArgumentException.class,()->NoteParser.parse(bytes(foreign),"test-mrn","",10,1000));
+ }
+
 }
