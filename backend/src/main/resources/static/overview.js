@@ -825,6 +825,7 @@
 
     // 收治类型（灰/蓝）
     if (p.newAdmission) out.push(chip('chip-info', '新收', '', `入科 ${fmtTime(p.admissionTime)}`));
+    if (p.hospitalAdmission) out.push(chip('chip-mute', '入', '', '入科类型含入院或外院'));
     if (p.surgeryAdmission) out.push(chip('chip-mute', '术', '', '手术入科'));
     if (p.transferIn) out.push(chip('chip-mute', '转', '', '转入入科'));
 
