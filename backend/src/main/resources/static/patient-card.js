@@ -784,6 +784,7 @@
     }
   });
 
+  window.patientCardHandoverContext = () => ({deptCode, patients: patients.map(p => ({id: p.id, name: p.name, bed: p.hisBed}))});
   window.patientCardGroupContext = () => deptCode;
   window.patientCardReload = () => { groupFilter = ''; return load(); };
 
