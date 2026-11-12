@@ -47,4 +47,16 @@ class HandoverDataTest {
   assertNotNull(d.load("ANY_DEPT","synthetic-p1"));verify(client).fetch("test-mrn","");
  }
 
+ @SuppressWarnings("unchecked") @Test void displaysHumanReadableScoreWithoutBackendCode(){
+  MongoTemplate mongo=mock(MongoTemplate.class);BlbcjlClient client=mock(BlbcjlClient.class);HandoverConfig cfg=new HandoverConfig();cfg.setEnabled(true);
+  ObjectProvider<MongoTemplate> provider=mock(ObjectProvider.class);PatientRiskService risk=mock(PatientRiskService.class);when(risk.cardScoreTypes()).thenReturn(List.of("bradenScore"));when(risk.getPressureTypes()).thenReturn(List.of("bradenScore"));
+  HandoverData d=new HandoverData(mongo,client,cfg,provider,risk);ReflectionTestUtils.setField(d,"patients","patient");ReflectionTestUtils.setField(d,"bedside","bedside");ReflectionTestUtils.setField(d,"scoreCollection","score");ReflectionTestUtils.setField(d,"defaultBqdm","");
+  Patient p=new Patient();p.setId("p1");p.setMrn("test-mrn");p.setAdmissionTime(Date.from(Instant.now().minusSeconds(86400*5)));p.setIcuAdmissionTime(Date.from(Instant.now().minusSeconds(86400*4)));
+  when(mongo.findOne(any(Query.class),eq(Patient.class),eq("patient"))).thenReturn(p);
+  when(client.fetch("test-mrn","")).thenReturn("{\"code\":0,\"data\":[]}".getBytes(StandardCharsets.UTF_8));
+  when(mongo.findOne(any(Query.class),eq(org.bson.Document.class),eq("score"))).thenReturn(new org.bson.Document("time",Date.from(Instant.now().minusSeconds(3600))).append("total",9));
+  HandoverData.Source score=d.load("A","p1").sources.stream().filter(x->x.kind.equals("风险评分")).findFirst().orElseThrow();
+  assertEquals("压力性损伤风险",score.title);assertTrue(score.text.contains("Braden 评分"));assertFalse(score.text.contains("bradenScore"));
+ }
+
 }
