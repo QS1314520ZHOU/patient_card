@@ -49,4 +49,12 @@ class HandoverAiTest {
   assertEquals("1. 病情变化\n心率： 60次/分\n\n待核对\n出入量",output);
  }
 
+ @Test void checksAndHidesGroupedAndRangeCitations(){
+  String text="病情变化 [O108-O110]，持续关注（依据：N1、V2）。";Set<String> valid=Set.of("O108","O109","O110","N1","V2");
+  assertEquals(5,HandoverAi.validateReferences(text,valid));assertEquals("病情变化 ，持续关注。",HandoverAi.plainDraft(text));
+  assertThrows(IllegalStateException.class,()->HandoverAi.validateReferences("用药 [O108-O111]",valid));
+  assertThrows(IllegalStateException.class,()->HandoverAi.validateReferences("用药 [O108-N110]",valid));
+  assertThrows(IllegalStateException.class,()->HandoverAi.validateReferences("用药 [O110-O108]",valid));
+ }
+
 }
