@@ -28,6 +28,7 @@ public final class NoteParser {
     public static List<Note> parse(byte[] bytes,String mrn,String bqdm,int maxDocs,int maxBody) {
         ObjectMapper mapper=new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
         try {
+            if (mrn == null || mrn.isBlank() || bqdm == null) throw new IllegalArgumentException();
             JsonNode root;
             try { root=mapper.readTree(bytes); }
             catch(Exception e) {root=mapper.readTree(normalize(bytes));}
@@ -35,7 +36,7 @@ public final class NoteParser {
             if(root.path("data").size()>maxDocs)throw new IllegalArgumentException();
             List<Note> notes=new ArrayList<>();
             for(JsonNode row:root.path("data")) {
-                if(!row.isObject() || !row.path("BLH").isTextual() || !mrn.equals(row.path("BLH").asText()) || !row.path("BQDM").isTextual() || !bqdm.equals(row.path("BQDM").asText()) || !row.path("WBNR").isTextual()) throw new IllegalArgumentException();
+                if(!row.isObject() || !row.path("BLH").isTextual() || !mrn.equals(row.path("BLH").asText()) || !row.path("BQDM").isTextual() || (bqdm != null && !bqdm.isBlank() && !bqdm.equals(row.path("BQDM").asText())) || !row.path("WBNR").isTextual()) throw new IllegalArgumentException();
                 String body=row.path("WBNR").asText(); if(body.isBlank()||body.length()>maxBody)throw new IllegalArgumentException();
                 String type=row.path("MBKMC").isTextual()?row.path("MBKMC").asText():"文书类型待核对";
                 if(type.length()>200)type=type.substring(0,200);
