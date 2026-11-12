@@ -249,6 +249,8 @@ public class Patient {
     private Boolean newAdmission24h;
 
     // 入科类型标识
+    // 入科类型包含“入院”或“外院”，与按时间计算的 newAdmission 不同。
+    private Boolean hospitalAdmission;
     private Boolean surgeryAdmission;
     private Boolean transferIn;
 

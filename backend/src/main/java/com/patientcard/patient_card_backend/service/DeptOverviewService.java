@@ -263,6 +263,7 @@ public class DeptOverviewService {
             p.setNewAdmission24h(p.getAdmissionTime() != null
                     && !p.getAdmissionTime().before(newAdmitWindow[0])
                     && p.getAdmissionTime().before(newAdmitWindow[1]));
+            p.setHospitalAdmission(AdmissionTypeFlags.hospitalAdmission(admissionType));
             p.setSurgeryAdmission("手术".equals(admissionType));
             p.setTransferIn(admissionType.contains("转入"));
 

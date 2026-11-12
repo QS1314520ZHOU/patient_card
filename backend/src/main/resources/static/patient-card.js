@@ -227,6 +227,7 @@
     if (isHigh(p.vteRisk)) soft.push({ t: 'VTE', c: 'soft' });
     const diet = dietLabel(p.diet);
     if (diet) soft.push({ t: diet, c: 'soft', title: `饮食：${diet}` });
+    if (p.hospitalAdmission) soft.push({ t: '入', c: 'mute', title: '入院 / 外院' });
     if (p.surgeryAdmission) soft.push({ t: '术', c: 'mute' });
     if (p.transferIn) soft.push({ t: '转', c: 'mute' });
     return { alert, soft };

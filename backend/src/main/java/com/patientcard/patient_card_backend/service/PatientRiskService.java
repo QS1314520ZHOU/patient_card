@@ -80,6 +80,7 @@ public class PatientRiskService {
                     && !admittedAt.before(markWindow[0])
                     && admittedAt.before(markWindow[1]));
             String admissionType = patient.getAdmissionType() == null ? "" : patient.getAdmissionType().trim();
+            patient.setHospitalAdmission(AdmissionTypeFlags.hospitalAdmission(admissionType));
             patient.setSurgeryAdmission("手术".equals(admissionType));
             patient.setTransferIn(admissionType.contains("转入"));
         }
