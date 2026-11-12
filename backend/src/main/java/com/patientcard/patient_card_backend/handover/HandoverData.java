@@ -42,7 +42,8 @@ public class HandoverData {
   Patient first=patient(dept,id); Date admission=first.getAdmissionTime();
   if(admission==null)throw new IllegalStateException("缺少住院时间，无法安全限定本次住院范围");
   String mrn=first.getMrn(); String ward=config.getBqdmByDept().getOrDefault(dept,defaultBqdm);
-  if(ward==null||ward.isBlank())throw new IllegalStateException("尚未配置当前科室的病程病区编码 BQDM");
+  // 院内 BLBCJL 可按住院号查询全部病区；空 BQDM 不是缺少配置。
+  ward = ward == null ? "" : ward.trim();
   Instant now=Instant.now(); Window win=new Window(now); Snapshot out=new Snapshot();
   out.patientId=id;out.mrn=mrn;out.admission=admission;out.icuAdmission=first.getIcuAdmissionTime();out.from=win.from.toString();out.to=win.to.toString();out.asOf=win.asOf.toString();
   List<NoteParser.Note> notes=NoteParser.parse(client.fetch(mrn,ward),mrn,ward,1000,100000);
