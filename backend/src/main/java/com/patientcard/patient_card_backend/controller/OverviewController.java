@@ -169,14 +169,16 @@ public class OverviewController {
         body.put("scope", snapshot.getScope());
         body.put("patient", patient);
 
+        List<String> admissionTypes = new ArrayList<>();
+        if (Boolean.TRUE.equals(patient.getHospitalAdmission())) admissionTypes.add("入院/外院");
+        if (Boolean.TRUE.equals(patient.getSurgeryAdmission())) admissionTypes.add("手术");
+        if (Boolean.TRUE.equals(patient.getTransferIn())) admissionTypes.add("转入");
         List<Map<String, Object>> blocks = new ArrayList<>();
         blocks.add(block("患者摘要", List.of(
                 "入科时间：" + (patient.getAdmissionTime() == null ? "缺失" : fmtTime(patient.getAdmissionTime())),
                 "入科天数：" + (patient.getIcuDays() == null ? "-" : patient.getIcuDays()),
                 "主要诊断：" + blank(patient.getDiagnosis()),
-                "入科类型：" + (Boolean.TRUE.equals(patient.getSurgeryAdmission()) ? "手术 "
-                        + (Boolean.TRUE.equals(patient.getTransferIn()) ? "+ 转入" : "")
-                        : (Boolean.TRUE.equals(patient.getTransferIn()) ? "转入" : "常规")),
+                "入科类型：" + (admissionTypes.isEmpty() ? "常规" : String.join(" + ", admissionTypes)),
                 "责任组：" + blank(patient.getMedicalGroup()),
                 "主管医生：" + blank(patient.getBedDoctor()),
                 "责任护士：" + blank(patient.getResponsibleNurse())
