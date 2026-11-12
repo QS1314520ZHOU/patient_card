@@ -187,23 +187,9 @@
     return '';
   }
 
-  /**
-   * 饮食：源数据来自下拉多选，常见 ",流质" / "禁食,禁饮," 这类首尾或连续分隔符；
-   * 按分隔符拆分→去空→去重→缩写，多项用「、」连接；全空返回空串（不出标签）
-   */
-  const DIET_SHORT = {
-    糖尿病饮食: '糖尿病', 低盐饮食: '低盐', 低蛋白饮食: '低蛋白',
-    肠内营养: '肠内', 鼻饲饮食: '鼻饲', 流质饮食: '流质',
-  };
+  // 后端已从最新饮食医嘱提取标识并去掉「饮食」。
   function dietLabel(diet) {
-    const seen = new Set();
-    return String(diet || '')
-      .split(/[,，、;；|/\s]+/)
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .map((x) => DIET_SHORT[x] || x)
-      .filter((x) => (seen.has(x) ? false : seen.add(x)))
-      .join('、');
+    return String(diet || '').trim();
   }
 
   function isolationTag(raw) {

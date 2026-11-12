@@ -38,6 +38,10 @@ public class CardSupportService {
     private static final Logger log = LoggerFactory.getLogger(CardSupportService.class);
     private static final ZoneId HOSPITAL_ZONE = ZoneId.of("Asia/Shanghai");
     private static final String CENTER_COLLECTION_ORDERS = "VI_ICU_ZYYZ";
+    // 长词在前，避免「半流质饮食」被「流质饮食」截断。
+    private static final List<String> DIET_KEYWORDS = java.util.Arrays.asList(
+            "禁食禁饮", "半流质饮食", "流质饮食", "普通饮食", "糖尿病饮食", "鼻饲流质");
+    private static final Pattern DIET_PATTERN = Pattern.compile(String.join("|", DIET_KEYWORDS));
 
     private final MongoTemplate mongoTemplate;
     private final ObjectProvider<MongoTemplate> centerProvider;
@@ -83,6 +87,8 @@ public class CardSupportService {
         if (patients == null || patients.isEmpty()) {
             return;
         }
+        // 饮食只来自医嘱，数据源不可用或无匹配时也不能沿用 patient 中的旧值。
+        patients.forEach(p -> p.setDiet(null));
         Set<String> ids = patients.stream()
                 .map(Patient::getId)
                 .filter(v -> v != null && !v.trim().isEmpty())
@@ -103,6 +109,7 @@ public class CardSupportService {
             p.setVteCritical(null);
         }
         enrichIsolation(patients);
+        enrichDiet(patients);
         enrichVteCritical(patients);
     }
 
@@ -217,6 +224,45 @@ public class CardSupportService {
             }
         } catch (Exception ex) {
             log.warn("VI_ICU_ZYYZ 隔离医嘱查询失败：{}", ex.getMessage());
+        }
+    }
+
+    /** 饮食标识仅取 ZYYZ.pid = patient.hisPid 的最新饮食医嘱，不回退旧值。 */
+    private void enrichDiet(List<Patient> patients) {
+        MongoTemplate center = centerProvider.getIfAvailable();
+        if (center == null) {
+            log.warn("饮食标识跳过：centerMongoTemplate 不可用（检查 mongo.center.database 配置）");
+            return;
+        }
+        Set<String> hisPids = patients.stream().map(Patient::getHisPid)
+                .filter(v -> v != null && !v.trim().isEmpty())
+                .map(String::trim).collect(Collectors.toSet());
+        if (hisPids.isEmpty()) return;
+        try {
+            Query q = new Query(Criteria.where("pid").in(hisPids)
+                    .and("orderName").regex(DIET_PATTERN)
+                    .and("orderTime").ne(null));
+            q.with(Sort.by(Sort.Order.desc("orderTime"), Sort.Order.desc("_id")));
+            List<Document> orders = center.find(q, Document.class, CENTER_COLLECTION_ORDERS);
+            Map<String, Document> latestByPid = new HashMap<>();
+            for (Document order : orders) {
+                String pid = trimToNull(order.get("pid"));
+                if (pid != null) latestByPid.putIfAbsent(pid, order);
+            }
+            for (Patient p : patients) {
+                String pid = trimToNull(p.getHisPid());
+                Document latest = pid == null ? null : latestByPid.get(pid);
+                if (latest == null) continue;
+                String name = trimToNull(latest.get("orderName"));
+                if (name == null || name.startsWith("停") || "已停止".equals(trimToNull(latest.get("status")))) {
+                    continue;
+                }
+                java.util.regex.Matcher matcher = DIET_PATTERN.matcher(name);
+                if (matcher.find()) p.setDiet(matcher.group().replace("饮食", ""));
+            }
+            log.info("VI_ICU_ZYYZ 饮食医嘱命中 {} 条（hisPid {} 个）", orders.size(), hisPids.size());
+        } catch (Exception ex) {
+            log.warn("VI_ICU_ZYYZ 饮食医嘱查询失败：{}", ex.getMessage());
         }
     }
 

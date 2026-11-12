@@ -219,6 +219,10 @@ python -X utf8 backend\target\verify.py
 - 患者固定按 `deptCode` 和 `status=admitted` 查询。
 - `patient`、`score`、`deviceBind` 集合名称可以配置。
 - 增加“新、术、VTE、管、疮、养、转”标识。
+- 患者卡片饮食标识只读取 DataCenter `VI_ICU_ZYYZ` 医嘱（`pid = patient.hisPid`）：匹配
+  禁食禁饮、流质饮食、半流质饮食、普通饮食、糖尿病饮食、鼻饲流质，按 `orderTime` 倒序取最新一条，
+  同时刻按 `_id` 倒序；无时间的医嘱不参与。最新医嘱以“停”开头或状态为“已停止”时不显示，
+  不回退到旧医嘱或 patient 的饮食字段；显示时去掉“饮食”。DataCenter 未配置或查询失败时不显示。
 - “新”按 Asia/Shanghai 时区每日 08:00 至次日 08:00 判断。
 - 评分按患者 `_id` 关联，筛选 `valid=true`，按 `time` 取最新。
 - VTE按 `patient.hisPid = view_his_vte.patient_guid` 关联并取最新。
