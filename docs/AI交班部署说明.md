@@ -16,6 +16,9 @@
 handover:
   enabled: true
   bqdm-by-dept: {}
+  ai:
+    thinking: "off"
+    max-tokens: 3000
 ```
 
 在**服务器本地**通过受控方式设置与脓毒症项目同名的变量，不把密钥写入前端、仓库或聊天：
@@ -25,6 +28,8 @@ handover:
 - `CLINICAL_NOTES_BLBCJL_MBKMC`、`CLINICAL_NOTES_BLBCJL_WJJGMC`：接口筛选参数，缺省为空；若配置为筛选条件，返回病程不是全部，院内必须核对。
 - `AI_BASE_URL`：院内 OpenAI 兼容网关根地址，不含 `/v1`；`AI_API_KEY` 如网关要求则配置。
 - `AI_MODEL_REASONING`、`AI_MODEL_EMBEDDING`：交班草稿模型和向量模型；`AI_CHAT_PATH`、`AI_EMBEDDINGS_PATH` 可按网关修改，默认 `/v1/chat/completions` 和 `/v1/embeddings`。
+- `handover.ai.thinking`：默认 `off`，通过 `chat_template_kwargs.enable_thinking=false` 关闭 Qwen 思考；`on` 开启，`default` 不发送该参数。若网关不支持此参数，可改为 `default` 并重启。
+- `handover.ai.max-tokens`：默认 3000，允许 1–8192，实际上限受网关限制；生成结果被截断或过滤时不显示草稿。
 - `mongo.center.database` 及其连接：现有 DataCenter 医嘱来源；未配置时医嘱提示不可用。
 
 地址不允许包含账号密码、不跟随重定向。生产应验证 TLS 证书；本功能不提供跳过证书验证的开关。向量和病程接口不配置时，不应将草稿当作完整结果。
