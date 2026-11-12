@@ -26,7 +26,7 @@ public class BlbcjlClient {
     public BlbcjlClient(ObjectMapper json) { this.json = json; }
     public byte[] fetch(String mrn, String bqdm) {
         if (endpoint == null || endpoint.isBlank() || accessKey == null || accessKey.isBlank()
-                || mrn == null || mrn.isBlank() || bqdm == null || bqdm.isBlank()) {
+                || mrn == null || mrn.isBlank() || bqdm == null) {
             throw new IllegalStateException("病程接口尚未配置完整");
         }
         HttpURLConnection c = null;
