@@ -121,3 +121,6 @@ handover:
   enabled: false
   # 默认无需按科室配置 BQDM，BLBCJL 请求以住院号 BLH 查询。
   bqdm-by-dept: {}
+  ai:
+    thinking: "off"  # off=关闭思考；on=开启；default=不发送该参数。网关不支持时设 default
+    max-tokens: 3000  # 模型输出额度，范围 1-8192；实际还受网关限制
