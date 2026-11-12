@@ -219,6 +219,9 @@ python -X utf8 backend\target\verify.py
 - 患者固定按 `deptCode` 和 `status=admitted` 查询。
 - `patient`、`score`、`deviceBind` 集合名称可以配置。
 - 增加“新、术、VTE、管、疮、养、转”标识。
+- 入科类型新增“入”标识：`admissionType` 包含“入院”或“外院”即显示；例如“手术入院”也命中，
+  可与“转”同时显示。该标识与按入科时间判断的“新收”不同，不改变新收统计。
+  既有“术”仍为字段等于“手术”，“转”为包含“转入”。
 - 患者卡片饮食标识只读取 DataCenter `VI_ICU_ZYYZ` 医嘱（`pid = patient.hisPid`）：匹配
   禁食禁饮、流质饮食、半流质饮食、普通饮食、糖尿病饮食、鼻饲流质，按 `orderTime` 倒序取最新一条，
   同时刻按 `_id` 倒序；无时间的医嘱不参与。最新医嘱以“停”开头或状态为“已停止”时不显示，
