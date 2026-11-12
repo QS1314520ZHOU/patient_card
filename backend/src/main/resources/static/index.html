@@ -69,14 +69,14 @@
       <div class="ai-controls"><label for="aiPatient">患者</label><select id="aiPatient"></select><button id="aiLoad" type="button">读取资料</button><button id="aiGenerate" type="button" class="ai-primary">生成交班草稿</button></div>
       <p id="aiStatus" class="ai-status" role="status"></p><div id="aiWarnings" class="ai-warnings"></div>
       <div class="ai-layout"><section><h3>交班草稿</h3><p class="ai-tip">可修改；核对状态仅保留在当前页面，关闭后清除，不记录核对人。</p><textarea id="aiDraft" rows="16" placeholder="生成后在此核对、修改" aria-label="交班草稿"></textarea><button id="aiConfirm" type="button" disabled>标记已核对</button><span id="aiConfirmed" role="status"></span></section>
-      <section><h3>资料与来源</h3><p class="ai-tip">按来源编号对照草稿；标记截断的原文仅部分送入模型。</p><div id="aiSources"></div></section></div>
+      <section><h3>资料时间线</h3><p id="aiTimelineTip" class="ai-tip">按时间查看资料，生成后请结合原系统逐条核对。</p><div id="aiSources" class="ai-timeline"></div></section></div>
     </div>
   </dialog>
-  <link rel="stylesheet" href="handover.css?v=1">
+  <link rel="stylesheet" href="handover.css?v=2">
   <link rel="stylesheet" href="group-settings.css?v=1">
   <script src="patient-card.js?v=6"></script>
   <script src="group-settings.js?v=1"></script>
-  <script src="handover.js?v=1"></script>
+  <script src="handover.js?v=2"></script>
   <script src="overview-theme.js?v=5"></script>
 </body>
 </html>
