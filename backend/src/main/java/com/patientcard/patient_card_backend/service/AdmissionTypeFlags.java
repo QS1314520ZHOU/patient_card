@@ -4,6 +4,14 @@ package com.patientcard.patient_card_backend.service;
 public final class AdmissionTypeFlags {
     private AdmissionTypeFlags() { }
 
+    public static boolean surgeryAdmission(String admissionType) {
+        return admissionType != null && admissionType.contains("手术");
+    }
+
+    public static boolean transferIn(String admissionType) {
+        return admissionType != null && admissionType.contains("转入");
+    }
+
     public static boolean hospitalAdmission(String admissionType) {
         return admissionType != null && (admissionType.contains("入院") || admissionType.contains("外院"));
     }
