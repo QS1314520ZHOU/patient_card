@@ -264,8 +264,8 @@ public class DeptOverviewService {
                     && !p.getAdmissionTime().before(newAdmitWindow[0])
                     && p.getAdmissionTime().before(newAdmitWindow[1]));
             p.setHospitalAdmission(AdmissionTypeFlags.hospitalAdmission(admissionType));
-            p.setSurgeryAdmission("手术".equals(admissionType));
-            p.setTransferIn(admissionType.contains("转入"));
+            p.setSurgeryAdmission(AdmissionTypeFlags.surgeryAdmission(admissionType));
+            p.setTransferIn(AdmissionTypeFlags.transferIn(admissionType));
 
             String hisPid = p.getHisPid();
             boolean bound = boundPids.contains(id) || (hisPid != null && boundPids.contains(hisPid));
@@ -467,7 +467,7 @@ public class DeptOverviewService {
                 asOfText, dischargedCount, 0, "离科分类基于死亡时间与离院方式判定，口径待院内核实"));
         metrics.add(metric("died", "死亡", diedCount, "人", "event-window", "partial", true, asOfText, diedCount, 0,
                 "离科分类基于死亡时间与离院方式判定，口径待院内核实"));
-        metrics.add(metric("surgery", "手术入科", surgeryCount, "人", "current", "ok", true, asOfText, surgeryCount, 0, "入科类型=手术"));
+        metrics.add(metric("surgery", "手术入科", surgeryCount, "人", "current", "ok", true, asOfText, surgeryCount, 0, "入科类型含手术"));
         metrics.add(metric("transferIn", "转入入科", transferInCount, "人", "current", "ok", true, asOfText, transferInCount, 0, "入科类型含转入"));
         metrics.add(metric("fallUnassessed", "跌倒未评估", fallUnassessed, "人", "current", "ok", true, asOfText, fallUnassessed, 0, "未评估≠低风险"));
         metrics.add(metric("pressureUnassessed", "压疮未评估", pressureUnassessed, "人", "current", "ok", true, asOfText, pressureUnassessed, 0, "未评估≠低风险"));
