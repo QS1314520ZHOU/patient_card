@@ -12,7 +12,7 @@ cat > target/start.sh <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
-exec java -jar "$DIR/patient-card-0.0.11-preview.3.jar" --spring.config.additional-location="file:$DIR/config/"
+exec java -jar "$DIR/patient-card-0.0.11-preview.4.jar" --spring.config.additional-location="file:$DIR/config/"
 EOF
 chmod +x target/start.sh
 printf '\n构建完成。部署 target 目录，并将现有配置放入 target/config/application.yml：\n  %s\n' "$(pwd)/target"
