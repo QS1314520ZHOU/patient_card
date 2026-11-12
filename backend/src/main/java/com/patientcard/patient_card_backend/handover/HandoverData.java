@@ -87,7 +87,8 @@ public class HandoverData {
     Document d=mongo.findOne(q,Document.class,scoreCollection);if(d==null||!(d.get("time") instanceof Date))continue;
     String total=Objects.toString(d.get("total"),"未记录"), conclusion=Objects.toString(d.get("conclusion"),"未记录");
     String label=type.equals(risks.getFallScoreType())?"跌倒风险":risks.getPressureTypes().contains(type)?"压力性损伤风险":type.equals(risks.getPipeScoreType())?"管路风险":type.equals(PatientRiskService.NUTRITION)?"营养风险":type;
-    add(out,"R",next,"风险评分",label,(Date)d.get("time"),"评分类型："+type+"；原始评分："+total+"；原始结论："+conclusion,win,false);
+    String scoreName=type.equals("bradenScore")?"Braden 评分":label+"评分";
+    add(out,"R",next,"风险评分",label,(Date)d.get("time"),"评分名称："+scoreName+"；原始评分："+total+"；原始结论："+conclusion,win,false);
    }
   }catch(Exception e){out.sources.removeIf(s->"风险评分".equals(s.kind));out.warnings.add("风险评分读取失败，需核对原系统。");}
   try{
