@@ -1,0 +1,25 @@
+.group-settings { margin: auto; width: min(680px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px)); padding: 0; border: 1px solid #d6deea; border-radius: 12px; color: #253349; box-shadow: 0 12px 40px #1d355733; }
+.group-settings::backdrop { background: rgba(17, 31, 52, .48); }
+.group-form { display: flex; flex-direction: column; max-height: min(720px, calc(100vh - 32px)); font: 15px/1.5 system-ui, sans-serif; }
+.group-form header, .group-form footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; }
+.group-form header { border-bottom: 1px solid #e5eaf1; }
+.group-form h2 { font-size: 20px; margin: 0; }
+.group-form header p { margin: 3px 0 0; color: #5c6d83; font-size: 14px; }
+.group-content { overflow: auto; padding: 8px 24px 16px; }
+.group-content p { color: #526176; margin: 12px 0; }
+.group-labels, .group-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) 52px; gap: 10px; align-items: center; }
+.group-labels { color: #526176; font-weight: 600; margin: 16px 0 6px; }
+.group-row { margin-bottom: 8px; }
+.group-form input { min-width: 0; width: 100%; box-sizing: border-box; border: 1px solid #b9c5d4; border-radius: 6px; padding: 9px 10px; min-height: 42px; font: inherit; color: inherit; }
+.group-form input:focus-visible, .group-form button:focus-visible { outline: 2px solid #216dd4; outline-offset: 2px; }
+.group-form button { cursor: pointer; font: inherit; min-height: 40px; }
+.group-remove, .group-close { color: #526176; background: none; border: 0; }
+.group-close { font-size: 28px !important; line-height: 1; }
+.group-secondary { background: #fff; color: #344b69; border: 1px solid #b9c5d4; border-radius: 6px; padding: 7px 14px; }
+.group-key-label { display: block; margin: 18px 0 6px; font-weight: 600; }
+.group-form #group-status { font-size: 14px; min-height: 20px; margin-bottom: 0; }
+.group-form #group-status.error { color: #b42318; }
+.group-form footer { border-top: 1px solid #e5eaf1; justify-content: flex-end; }
+#group-save { background: #276cd1; border: 1px solid #276cd1; color: white; border-radius: 6px; padding: 7px 16px; }
+#group-save:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 480px) { .group-content, .group-form header, .group-form footer { padding-left: 16px; padding-right: 16px; } .group-labels, .group-row { gap: 6px; grid-template-columns: minmax(0,1fr) minmax(0,1fr) 42px; } }
