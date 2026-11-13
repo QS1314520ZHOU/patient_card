@@ -29,7 +29,7 @@ public class HandoverTrendService {
  private static final Map<String,String> LAB=Map.ofEntries(Map.entry("PLT","血小板"),Map.entry("platelet","血小板"),Map.entry("TBIL","总胆红素"),Map.entry("sCr","肌酐"),Map.entry("CREA","肌酐"),Map.entry("Cr","肌酐"),Map.entry("LAC","乳酸"),Map.entry("LAC1","乳酸"));
  public static class Point { public long time;public double value; public String rawStatus; }
  public static class Track { public String id,label,unit,kind; public List<Point> points=new ArrayList<>(); }
- public static class Event { public long time;public String action,rawAction,speed; }
+ public static class Event { public long time;public String action,rawAction,speed,quickAddAmount; }
  public static class Segment { public long from,to;public String state; }
  public static class DrugRecord { public String status,hisStatus;public List<Event> actions=new ArrayList<>();public List<Segment> segments=new ArrayList<>();public List<String> issues=new ArrayList<>(); }
  public static class DrugTrack { public String id,name;public List<DrugRecord> records=new ArrayList<>(); }
@@ -91,20 +91,29 @@ public class HandoverTrendService {
   DrugRecord r=new DrugRecord();r.status=shortText(d.get("status"),80);Object his=d.get("hisStartTime");r.hisStatus=his instanceof Document?shortText(((Document)his).get("statusFlag"),80):"";
   Object raw=d.get("drugActionList");List<Event> all=new ArrayList<>();boolean incomplete=false;
   if(raw instanceof List){List<?> actions=(List<?>)raw;if(actions.size()>500){incomplete=true;r.issues.add("操作记录超过500条，未推算区间。");}
-   for(Object v:actions.subList(0,Math.min(actions.size(),500)))if(v instanceof Document){Document a=(Document)v;Object at=a.get("time");if(!(at instanceof Date)){r.issues.add("存在无时间的操作，区间待核对。");incomplete=true;continue;}long t=((Date)at).getTime();if(t>to.toEpochMilli())continue;if(d.get("startTime") instanceof Date && t<((Date)d.get("startTime")).getTime()){incomplete=true;r.issues.add("操作时间早于起始时间，未推算区间。");}String rawAction=shortText(a.get("action")!=null?a.get("action"):a.get("type"),60);Event e=new Event();e.time=t;e.rawAction=rawAction;e.action=actionName(rawAction);String speed=shortText(a.get("speed"),40),unit=shortText(a.get("speedUnit"),40);e.speed=speed.isBlank()?"":speed+(unit.isBlank()?"（单位未记录）":" "+unit);all.add(e);}
+   for(Object v:actions.subList(0,Math.min(actions.size(),500)))if(v instanceof Document){Document a=(Document)v;Object at=a.get("time");if(!(at instanceof Date)){r.issues.add("存在无时间的操作，区间待核对。");incomplete=true;continue;}long t=((Date)at).getTime();if(t>to.toEpochMilli())continue;if(d.get("startTime") instanceof Date && t<((Date)d.get("startTime")).getTime()){incomplete=true;r.issues.add("操作时间早于起始时间，未推算区间。");}String rawAction=shortText(a.get("action")!=null?a.get("action"):a.get("type"),60);Event e=new Event();e.time=t;e.rawAction=rawAction;e.action=actionName(rawAction);String speed=shortText(a.get("speed"),40),unit=shortText(a.get("speedUnit"),40);e.speed=speed.isBlank()?"":speed+(unit.isBlank()?"（单位未记录）":" "+unit);e.quickAddAmount=shortText(a.get("quickAddAmount"),40);all.add(e);}
   }
   all.sort(Comparator.comparingLong(e->e.time));
-  for(int i=1;i<all.size();i++)if(all.get(i).time==all.get(i-1).time){incomplete=true;r.issues.add("操作存在相同时间，先后顺序待核对；未推算区间。");break;}
   for(Event e:all)if(e.time>=from.toEpochMilli()&&e.time<=to.toEpochMilli())r.actions.add(e);
   if(!incomplete && !all.isEmpty()){
-   Event previous=null;
-   for(Event e:all){
-    if(previous!=null){String st=stateAfter(previous.rawAction);if(st!=null && e.time>previous.time){String next=e.action;boolean paired="运行".equals(st)?Set.of("暂停","停止").contains(next):Set.of("恢复","停止").contains(next);addSegment(r,previous.time,e.time,paired?st:"过程未知",from,to);if(!paired)r.issues.add("操作顺序不完整或未知，区间待核对。");}}
-    previous=e;
+   long previousTime=0;String state=null;boolean first=true;boolean lastGroupAmbiguous=false;
+   for(int i=0;i<all.size();){
+    int j=i+1;long at=all.get(i).time;while(j<all.size()&&all.get(j).time==at)j++;
+    boolean known=true;for(int k=i;k<j;k++)if("操作类型待核对".equals(all.get(k).action)||"取消".equals(all.get(k).action))known=false;
+    if(!first && at>previousTime){String next=all.get(i).action;boolean compatible=(j-i>1&&known)||("运行".equals(state)&&Set.of("上调","下调","快推","暂停","停止").contains(next))||("暂停".equals(state)&&Set.of("恢复","停止").contains(next));String shown=(state!=null&&known&&compatible)?state:"过程未知";addSegment(r,previousTime,at,shown,from,to);if("过程未知".equals(shown))r.issues.add("操作顺序或状态不明确，区间待确认。");}
+    if(j-i>1){state=null;r.issues.add("同一时间有多条操作，先后顺序未知，后续状态待确认。");}
+    else {String a=all.get(i).action;
+     if("开始".equals(a)||"恢复".equals(a))state="运行";
+     else if("暂停".equals(a))state="暂停";
+     else if("停止".equals(a))state=null;
+     else if(Set.of("上调","下调","快推").contains(a)){if(!"运行".equals(state)){state=null;r.issues.add("调速或快推前状态不明确，后续区间待确认。");}}
+     else state=null;
+    }
+    previousTime=at;first=false;lastGroupAmbiguous=j-i>1;i=j;
    }
-   if(previous!=null && "运行".equals(stateAfter(previous.rawAction)) && previous.time<to.toEpochMilli()){
-    if(d.get("endTime") instanceof Date){long end=((Date)d.get("endTime")).getTime();if(end>previous.time){addSegment(r,previous.time,end,"过程未知",from,to);r.issues.add("有结束时间但无对应停止操作，该区间待核对。");}else r.issues.add("结束时间不晚于最后开始或恢复操作，未推算后续区间。");}
-    else addSegment(r,previous.time,to.toEpochMilli(),"未见结束",from,to);
+   Event last=all.get(all.size()-1);if((lastGroupAmbiguous||!"停止".equals(last.action))&&previousTime<to.toEpochMilli()){
+    long end=to.toEpochMilli();if(d.get("endTime") instanceof Date){long recorded=((Date)d.get("endTime")).getTime();if(recorded>previousTime){end=Math.min(end,recorded);r.issues.add("结束时间没有对应的停止操作，后续区间待确认。");}else{end=previousTime;r.issues.add("结束时间不晚于最后操作，未推算后续区间。");}}
+    addSegment(r,previousTime,end,(state==null||d.get("endTime") instanceof Date)?"过程未知":"未见结束",from,to);
    }
   }else if(!incomplete && all.isEmpty() && d.get("startTime") instanceof Date && d.get("endTime") instanceof Date){
    long a=((Date)d.get("startTime")).getTime(),b=((Date)d.get("endTime")).getTime();if(b>a){addSegment(r,a,b,"过程未知",from,to);r.issues.add("仅有起止时间，期间是否暂停未知。");}else r.issues.add("起止时间异常，未推算区间。");
@@ -124,5 +133,5 @@ public class HandoverTrendService {
  static void point(Track t,long time,double value,String status){Point p=new Point();p.time=time;p.value=value;p.rawStatus=status;t.points.add(p);}
  static Double number(Object v){if(v==null)return null;try{String s=String.valueOf(v).trim();if(!s.matches("[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)")||s.length()>40)return null;double d=Double.parseDouble(s);return Double.isFinite(d)?d:null;}catch(Exception e){return null;}}
  static String drugName(Object raw){if(!(raw instanceof List))return "未命名用药记录";List<String> names=new ArrayList<>();boolean truncated=false;for(Object o:(List<?>)raw)if(o instanceof Document){String n=Objects.toString(((Document)o).get("name"),"").trim();if(!n.isEmpty()&&!names.contains(n)){if(names.size()>=20){truncated=true;break;}if(n.length()>200){n=n.substring(0,200)+"…";truncated=true;}names.add(n);}}return names.isEmpty()?"未命名用药记录":String.join("＋",names)+(truncated?"（名称已截断）":"");}
- static String actionName(Object raw){String a=Objects.toString(raw,"").trim().toLowerCase(Locale.ROOT);if(Set.of("start","开始").contains(a))return "开始";if(Set.of("stop","停止","停用").contains(a))return "停止";if(Set.of("pause","暂停").contains(a))return "暂停";if(Set.of("recovery","resume","恢复","继续").contains(a))return "恢复";if(Set.of("cancel","取消").contains(a))return "取消";return "操作类型待核对";}
+ static String actionName(Object raw){String a=Objects.toString(raw,"").trim().toLowerCase(Locale.ROOT);if(Set.of("start","开始").contains(a))return "开始";if(Set.of("stop","停止","停用").contains(a))return "停止";if(Set.of("pause","暂停").contains(a))return "暂停";if(Set.of("recovery","resume","恢复","继续").contains(a))return "恢复";if("add".equals(a))return "上调";if("minus".equals(a))return "下调";if("quickadd".equals(a))return "快推";if(Set.of("cancel","取消").contains(a))return "取消";return "操作类型待核对";}
 }
