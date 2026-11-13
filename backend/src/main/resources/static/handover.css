@@ -48,3 +48,87 @@
 .drug-symbol.unknown{border-radius:50%;background:#fff0cf;color:#76551f;text-align:center;font-size:13px;font-weight:700;line-height:18px}
 .drug-legend{position:relative;font-weight:400}.drug-legend summary{cursor:pointer;color:#38679b;font-size:13px;list-style:none;min-height:28px}.drug-legend summary:after{content:" ⓘ"}.drug-legend-body{position:absolute;right:0;top:28px;z-index:5;min-width:160px;max-width:220px;background:#fff;border:1px solid #d9e4ef;border-radius:8px;padding:10px 12px;box-shadow:0 4px 14px #152a4920;font-size:13px;color:#283d54}.drug-legend-item{display:flex;align-items:center;gap:9px;padding:4px 0}.drug-legend-body p{font-size:12px;line-height:1.45;color:#805b21;margin:8px 0 0}
 @media(max-width:700px){.drug-label{flex-direction:row;align-items:center}.drug-legend-body{right:0;width:190px}.drug-record-row{grid-template-columns:116px minmax(0,1fr)}.drug-name{font-size:14px}}
+
+.trend-action.drug-symbol.multi{width:20px;height:20px;top:14px;border-radius:10px;background:#536d90;color:white;text-align:center;line-height:20px;font-size:12px;font-weight:700}
+
+/* Light clinical dashboard: a calm canvas, visible values and an aligned time scale. */
+.trend-section{background:#f7f9fa;border:1px solid #dce5e8;border-radius:12px;padding:22px}
+.trend-header h3{color:#193a43;font-size:19px;font-weight:700;margin:0}
+.trend-header #aiChartGenerate{border-color:#0b7780;color:#086d76;background:#fff;font-weight:600;min-height:40px}
+.trend-header #aiChartGenerate:hover{background:#e8f5f5}
+.trend-section .trend-intro{padding:18px 0 12px!important}
+.trend-period{color:#526a70;font-size:14px;gap:8px 12px}.trend-period strong{color:#233e46;font-size:14px}
+.trend-badge{background:#def1ef;color:#116b68;border-radius:4px;padding:4px 9px}.trend-badge.fallback{background:#fff1da;color:#765119}
+.trend-options{border:0;background:transparent;margin:0 0 14px}.trend-options>summary{display:inline-block;padding:4px 0;color:#116e77;min-height:28px}.trend-options>summary:before{content:'';display:inline-block;margin-right:8px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid #116e77}.trend-options[open]>summary:before{transform:rotate(90deg)}.trend-options-content{background:#fff;border:1px solid #dce8e8;border-radius:8px;padding:4px 14px 14px}
+.trend-surface{border:1px solid #dce5e8;border-radius:8px;background:white;padding:0 20px 12px;overflow:visible}
+.trend-group-label{border:0;color:#1e3c45;font-size:15px;padding:20px 0 10px}
+.trend-group-label>span:before{content:'';display:inline-block;width:4px;height:16px;background:#14858c;border-radius:2px;margin-right:8px;vertical-align:-3px}
+.trend-axis,.trend-track-row{grid-template-columns:190px minmax(0,1fr);gap:0 20px}
+.trend-axis{padding:8px 0 10px;border-bottom:1px solid #e0e9ea}.trend-axis-label,.trend-ticks{color:#5d7378;font-size:12px}
+.trend-track{border-top:0;border-bottom:1px solid #edf1f1;padding:12px 0}
+.trend-track-row{min-height:0;align-items:center}
+.trend-track-label{color:#203f46;gap:3px;line-height:1.4}.trend-track-label strong{font-size:15px}
+.trend-latest{display:flex;align-items:baseline;gap:5px;color:#116b72}.latest-value{font-size:21px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums}.latest-unit{font-size:12px;color:#536d72;font-weight:500}
+.trend-meta{color:#657a7f;font-size:12px}.trend-plot-cell{height:64px;color:#16828b;background:repeating-linear-gradient(to right,transparent 0,transparent calc(25% - 1px),#e8eeee calc(25% - 1px),#e8eeee 25%)}
+.trend-point{width:9px;height:9px;background:#16828b;border:2px solid white}.trend-point.lab{width:9px;height:9px;border:2px solid #16828b;background:white}
+.trend-details{grid-column:2;margin:0;font-size:13px;color:#4a636b}.trend-details summary{color:#176e78;min-height:24px}.trend-details ul{padding-left:18px}
+.drug-label{border-top:0;padding-top:24px}.drug-name{margin:1px 0 9px;color:#203f46;font-size:15px;line-height:1.45}.drug-track{padding:14px 0 8px}.drug-record-row{min-height:54px}.drug-track .trend-details{margin:0 0 8px}.drug-plot{height:48px}.trend-segment.run{background:#a8c6e9;border-radius:2px}.trend-segment.pause{background:repeating-linear-gradient(135deg,#f0f3f6 0,#f0f3f6 4px,#b8c8d5 4px,#b8c8d5 6px);border-color:#93aabb}.trend-segment.unknown{background:#fff7e8;border-color:#a66c21}
+.trend-action.drug-symbol.multi{background:#335c6c}.drug-symbol.resume:before{border-color:#154782}.drug-symbol.resume:after{color:#154782;font-weight:700}
+.drug-legend summary{color:#176e78;font-size:13px}.trend-notes{margin-top:10px;color:#60777a}.trend-notes-details summary{color:#476c70}
+@media(max-width:700px){
+ .trend-section{padding:16px 12px}.trend-header{flex-direction:row;align-items:center}.trend-header h3{font-size:17px}.trend-header #aiChartGenerate{font-size:14px;padding:8px 10px}.trend-period{font-size:13px;gap:3px}.trend-period strong{font-size:14px}.trend-intro{align-items:flex-start!important}.trend-surface{padding:0 12px 8px}
+ .trend-axis,.trend-track-row,.drug-record-row{grid-template-columns:minmax(0,1fr);gap:4px}.trend-axis-label{display:none}.trend-axis{padding-top:7px}.trend-tick.tick-1,.trend-tick.tick-2,.trend-tick.tick-3{display:none}
+ .trend-track{padding:12px 0 10px}.trend-track-label{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2px 8px}.trend-track-label strong{font-size:14px}.trend-latest{justify-self:end}.latest-value{font-size:19px}.latest-unit,.trend-meta{font-size:12px}.trend-meta{grid-column:1 / -1}.trend-plot-cell{height:54px}.trend-details{grid-column:1;margin:2px 0 0}.drug-record-row .trend-track-label{display:block}.drug-record-row .trend-plot-cell{height:48px}.drug-legend-body{width:190px}.drug-label{flex-direction:row;align-items:center}
+}
+
+/* Clinical flowsheet: flat, compact rows with a single aligned time grid. */
+.trend-section{border:0;border-top:1px solid #d6dce2;border-radius:0;background:#fff;padding:20px 0 0;margin-top:22px}
+.trend-header h3{font-size:17px;color:#24364a}
+.trend-header #aiChartGenerate{border:1px solid #aebdcb;color:#245b93;background:#fff;border-radius:3px;min-height:36px;font-weight:500}
+.trend-header #aiChartGenerate:hover{background:#f3f7fa}
+.trend-section .trend-intro{padding:14px 0 4px!important}
+.trend-period,.trend-period strong{color:#4e5d6b;font-size:13px;font-weight:400}.trend-period strong{font-weight:600}
+.trend-badge{color:#3a596e;background:#eef2f5;border-radius:2px;font-size:12px;font-weight:600;padding:3px 6px}
+.trend-options{margin:0 0 8px}.trend-options>summary{color:#245b93;font-weight:500;font-size:13px}.trend-options>summary:before{border-left-color:#245b93}
+.trend-surface{border:1px solid #cfd8e0;border-radius:0;background:#fff;padding:0;overflow:visible}
+.trend-group-label{background:#eef2f5;border-bottom:1px solid #cfd8e0;padding:9px 12px;color:#2b3945;font-size:14px}
+.trend-group-label>span:before{display:none}
+.trend-axis,.trend-track-row{grid-template-columns:192px minmax(0,1fr);column-gap:0}
+.trend-axis{background:#f8f9fa;padding:8px 14px 7px 12px;border-bottom:1px solid #d8e0e5}.trend-axis-label,.trend-ticks{color:#4b5967;font-size:12px}
+.trend-track{padding:8px 14px 7px 12px;border-bottom:1px solid #e2e7eb}.trend-track:last-child{border-bottom:0}
+.trend-track-row{align-items:center}.trend-track-label{color:#263746;gap:2px}.trend-track-label strong{font-size:14px;font-weight:600}.trend-latest{color:#243b4d;gap:5px}.latest-value{font-size:16px;line-height:1.35}.latest-unit,.trend-meta{font-size:12px;color:#596a78}.trend-plot-cell{height:58px;color:#3775ad;background:repeating-linear-gradient(to right,transparent 0,transparent calc(25% - 1px),#e1e7ec calc(25% - 1px),#e1e7ec 25%)}
+.trend-point{width:9px;height:9px;background:#3775ad;border:2px solid #fff}.trend-point.lab{background:#fff;border:2px solid #3775ad}
+.trend-details{font-size:12px;line-height:1.5}.trend-details summary{color:#285d91;min-height:20px}.trend-details[open]{padding-bottom:6px}
+.drug-label{padding:9px 12px;border-top:1px solid #cfd8e0}.drug-legend summary{color:#285d91}.drug-name{font-size:14px;color:#263746;margin:4px 0 5px;font-weight:600}
+.drug-track{padding:9px 14px 7px 12px}.drug-record-row{min-height:42px}.drug-track .trend-details{margin:0 0 4px}.drug-plot{height:42px}.drug-plot .trend-segment{top:13px}.drug-plot .trend-action.drug-symbol{top:12px}.drug-plot .trend-action.drug-symbol.multi{top:11px}
+.trend-segment.run{background:#9cbce0;border-radius:0}.trend-segment.pause{background:repeating-linear-gradient(135deg,#f0f2f4 0,#f0f2f4 4px,#aebdcb 4px,#aebdcb 6px);border-color:#92a6b5}.trend-action.drug-symbol.multi{background:#495f73}
+.trend-notes-details summary{color:#526475;font-size:13px}
+@media(max-width:700px){
+ .trend-section{padding:16px 0 0;margin-top:18px}.trend-header{gap:8px}.trend-header h3{font-size:16px}.trend-header #aiChartGenerate{font-size:13px;padding:7px 8px}.trend-period,.trend-period strong{font-size:12px}.trend-surface{padding:0}.trend-group-label,.drug-label{padding:9px 10px}.trend-axis,.trend-track-row,.drug-record-row{grid-template-columns:minmax(0,1fr)}.trend-axis{padding:8px 10px}.trend-track,.drug-track{padding:10px}.trend-track-label{grid-template-columns:minmax(0,1fr) auto}.trend-plot-cell{height:54px}.drug-plot{height:42px}.trend-details{font-size:13px}.trend-meta,.latest-unit{font-size:12px}.latest-value{font-size:16px}
+}
+
+/* Match the existing ward cards, buttons and user-configured card-header colour. */
+.trend-section{border-top-color:var(--line,#E6E5E3)}
+.trend-header h3{color:var(--ink,#2C2C2B)}
+.trend-header #aiChartGenerate{border:1px solid var(--line,#E6E5E3);border-radius:6px;color:var(--ink2,#4A4A48);background:var(--panel,#fff);font-weight:400}
+.trend-header #aiChartGenerate:hover{border-color:var(--accent,#2F6FED);color:var(--accent,#2F6FED);background:#fff}
+.trend-period,.trend-period strong{color:var(--ink2,#4A4A48)}
+.trend-badge{background:var(--info-bg,#E8F0FE);color:#2756a8;border-radius:4px}
+.trend-options>summary,.trend-details summary,.drug-legend summary{color:#245abe}
+.trend-options>summary:before{border-left-color:#245abe}
+.trend-surface{border-color:var(--line,#E6E5E3);border-radius:8px}
+.trend-group-label{background:var(--info-bg,#E8F0FE);border-bottom:1px solid #d5e3fa;border-left:4px solid var(--head-bg,#5392FF);padding-left:12px;color:#253d68}
+.trend-surface>.trend-group-label:first-child{border-radius:7px 7px 0 0}
+.trend-axis{background:#F8FAFE;border-bottom-color:#e3e9f2}.trend-axis-label,.trend-ticks{color:#53657e}
+.trend-track{border-bottom-color:#edf0f5}.trend-track-label,.drug-name{color:var(--ink,#2C2C2B)}.trend-latest{color:#253d68}.trend-meta,.latest-unit{color:#66748a}
+.trend-plot-cell{color:var(--accent,#2F6FED);background:repeating-linear-gradient(to right,transparent 0,transparent calc(25% - 1px),#e5eaf2 calc(25% - 1px),#e5eaf2 25%)}
+.trend-point{background:var(--accent,#2F6FED)}.trend-point.lab{background:#fff;border-color:var(--accent,#2F6FED)}
+.trend-segment.run{background:#aac7f5}.trend-notes-details summary{color:#526c91}
+
+/* A softer variant of the ward's existing blue-and-white palette. */
+.trend-group-label{background:#f1f6ff;border-bottom-color:#e4edfb}
+.trend-axis{background:#fafcff}
+.trend-plot-cell{color:#4f7fbd}
+.trend-point{background:#4f7fbd}.trend-point.lab{background:#fff;border-color:#4f7fbd}
+.trend-segment.run{background:#c5d9f6}
+.trend-badge{background:#eef4ff;color:#315b9e}
