@@ -35,3 +35,16 @@
 
 .trend-raw-status{font-size:12px;color:#805614;font-weight:600;overflow-wrap:anywhere}
 @media(max-width:700px){.trend-raw-status,.trend-meta,.trend-latest,.trend-details,.trend-reason,.trend-sub,.trend-notes,.trend-period{font-size:14px}}
+
+/* Compact, readable medication rows with source-system action symbols. */
+.ai-warnings summary{cursor:pointer;color:#815c25;font-weight:600}
+.ai-status:empty{display:none}.trend-intro{padding-top:12px!important}.drug-name{margin:2px 0 8px;color:#223f60;font-size:14px;overflow-wrap:anywhere}.drug-record-row{min-height:52px}.drug-track>.trend-details{margin-top:0;margin-bottom:8px}.trend-segment.run{background:#b3cdf3;border-radius:0}.trend-action.drug-symbol{position:absolute;top:15px;height:18px;width:13px;border:0;transform:translateX(-50%);z-index:1}
+.drug-symbol{display:inline-block;position:relative;width:16px;height:18px;flex:none;vertical-align:middle}
+.drug-symbol.start:before,.drug-symbol.stop:before{content:"";position:absolute;left:6px;top:1px;width:4px;height:16px;background:#3673db}.drug-symbol.stop:before{background:#253a4b}
+.drug-symbol.pause:before,.drug-symbol.pause:after{content:"";position:absolute;top:2px;width:3px;height:14px;background:#d55c6b}.drug-symbol.pause:before{left:3px}.drug-symbol.pause:after{left:9px}
+.drug-symbol.resume:before{content:"";position:absolute;left:2px;top:2px;height:14px;border-left:2px solid #3979dc}.drug-symbol.resume:after{content:"▷";position:absolute;left:4px;top:-3px;color:#3979dc;font-size:18px;line-height:22px}
+.drug-symbol.up:before,.drug-symbol.down:before{content:"";position:absolute;left:1px;top:3px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:11px solid #d96a7a}.drug-symbol.down:before{border-bottom:0;border-top:11px solid #3979dc}
+.drug-symbol.bolus:before{content:"";position:absolute;top:8px;left:1px;width:10px;height:2px;background:#8fa6c5}.drug-symbol.bolus:after{content:"";position:absolute;top:5px;left:9px;border-left:6px solid #8fa6c5;border-top:4px solid transparent;border-bottom:4px solid transparent}.drug-symbol.remaining:before{content:"";position:absolute;top:5px;left:0;width:15px;height:8px;background:#d3dbe0}.drug-symbol.frequent:before{content:"···";position:absolute;top:0;left:0;background:#7d95b1;color:#fff;line-height:11px}
+.drug-symbol.unknown{border-radius:50%;background:#fff0cf;color:#76551f;text-align:center;font-size:13px;font-weight:700;line-height:18px}
+.drug-legend{position:relative;font-weight:400}.drug-legend summary{cursor:pointer;color:#38679b;font-size:13px;list-style:none;min-height:28px}.drug-legend summary:after{content:" ⓘ"}.drug-legend-body{position:absolute;right:0;top:28px;z-index:5;min-width:160px;max-width:220px;background:#fff;border:1px solid #d9e4ef;border-radius:8px;padding:10px 12px;box-shadow:0 4px 14px #152a4920;font-size:13px;color:#283d54}.drug-legend-item{display:flex;align-items:center;gap:9px;padding:4px 0}.drug-legend-body p{font-size:12px;line-height:1.45;color:#805b21;margin:8px 0 0}
+@media(max-width:700px){.drug-label{flex-direction:row;align-items:center}.drug-legend-body{right:0;width:190px}.drug-record-row{grid-template-columns:116px minmax(0,1fr)}.drug-name{font-size:14px}}
