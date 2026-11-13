@@ -84,13 +84,13 @@ public class HandoverTrendService {
     DrugTrack drug=groups.get(name);if(drug==null){if(groups.size()>=120){excess=true;continue;}drug=new DrugTrack();drug.id="drug:"+(groups.size()+1);drug.name=name;groups.put(name,drug);}drug.records.add(record);
    }
    c.medications.addAll(groups.values());if(excess)c.warnings.add("用药种类超过120组，仅纳入最近记录对应的120组，其他可能遗漏。");
-   c.warnings.add("用药记录检索从图表起点向前最多30天且不早于本次入科；更早启动的用药可能遗漏。时间段由操作记录推导，不证明实际给药；请核对原系统和状态。");
+   c.warnings.add("用药记录检索从图表起点向前最多30天且不早于本次入科；更早启动的用药可能遗漏。时间段由操作记录推导，不证明实际给药。");
   }catch(Exception e){c.medications.clear();c.warnings.add("用药执行读取失败，不能视为该时段未用药。");}
  }
  static DrugRecord drugRecord(Document d,Instant from,Instant to){
   DrugRecord r=new DrugRecord();r.status=shortText(d.get("status"),80);Object his=d.get("hisStartTime");r.hisStatus=his instanceof Document?shortText(((Document)his).get("statusFlag"),80):"";
   Object raw=d.get("drugActionList");List<Event> all=new ArrayList<>();boolean incomplete=false;
-  if(raw instanceof List){List<?> actions=(List<?>)raw;if(actions.size()>500){incomplete=true;r.issues.add("操作记录超过500条，未推算区间，请核对原系统。");}
+  if(raw instanceof List){List<?> actions=(List<?>)raw;if(actions.size()>500){incomplete=true;r.issues.add("操作记录超过500条，未推算区间。");}
    for(Object v:actions.subList(0,Math.min(actions.size(),500)))if(v instanceof Document){Document a=(Document)v;Object at=a.get("time");if(!(at instanceof Date)){r.issues.add("存在无时间的操作，区间待核对。");incomplete=true;continue;}long t=((Date)at).getTime();if(t>to.toEpochMilli())continue;if(d.get("startTime") instanceof Date && t<((Date)d.get("startTime")).getTime()){incomplete=true;r.issues.add("操作时间早于起始时间，未推算区间。");}String rawAction=shortText(a.get("action")!=null?a.get("action"):a.get("type"),60);Event e=new Event();e.time=t;e.rawAction=rawAction;e.action=actionName(rawAction);String speed=shortText(a.get("speed"),40),unit=shortText(a.get("speedUnit"),40);e.speed=speed.isBlank()?"":speed+(unit.isBlank()?"（单位未记录）":" "+unit);all.add(e);}
   }
   all.sort(Comparator.comparingLong(e->e.time));
@@ -113,7 +113,7 @@ public class HandoverTrendService {
    addFieldEvent(r,d.get("startTime"),"起始时间字段（待核对）",from,to);addFieldEvent(r,d.get("endTime"),"结束时间字段（待核对）",from,to);
   }
   if(!r.hisStatus.isEmpty())r.issues.add("HIS 原始状态："+r.hisStatus+"；与操作记录可能不一致，请核对。");
-  if(!r.status.isEmpty())r.issues.add("执行记录原始状态："+r.status+"。请核对原系统。");
+  if(!r.status.isEmpty())r.issues.add("执行记录原始状态："+r.status+"。");
   return r;
  }
  static void addFieldEvent(DrugRecord r,Object value,String action,Instant from,Instant to){if(!(value instanceof Date))return;long time=((Date)value).getTime();if(time<from.toEpochMilli()||time>to.toEpochMilli())return;Event e=new Event();e.time=time;e.action=action;e.rawAction="";e.speed="";r.actions.add(e);}
@@ -123,6 +123,6 @@ public class HandoverTrendService {
  static Track track(String id,String label,String unit,String kind){Track t=new Track();t.id=id;t.label=label;t.unit=unit;t.kind=kind;return t;}
  static void point(Track t,long time,double value,String status){Point p=new Point();p.time=time;p.value=value;p.rawStatus=status;t.points.add(p);}
  static Double number(Object v){if(v==null)return null;try{String s=String.valueOf(v).trim();if(!s.matches("[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)")||s.length()>40)return null;double d=Double.parseDouble(s);return Double.isFinite(d)?d:null;}catch(Exception e){return null;}}
- static String drugName(Object raw){if(!(raw instanceof List))return "未命名用药记录";List<String> names=new ArrayList<>();boolean truncated=false;for(Object o:(List<?>)raw)if(o instanceof Document){String n=Objects.toString(((Document)o).get("name"),"").trim();if(!n.isEmpty()&&!names.contains(n)){if(names.size()>=20){truncated=true;break;}if(n.length()>200){n=n.substring(0,200)+"…";truncated=true;}names.add(n);}}return names.isEmpty()?"未命名用药记录":String.join("＋",names)+(truncated?"（名称已截断，请核对原系统）":"");}
+ static String drugName(Object raw){if(!(raw instanceof List))return "未命名用药记录";List<String> names=new ArrayList<>();boolean truncated=false;for(Object o:(List<?>)raw)if(o instanceof Document){String n=Objects.toString(((Document)o).get("name"),"").trim();if(!n.isEmpty()&&!names.contains(n)){if(names.size()>=20){truncated=true;break;}if(n.length()>200){n=n.substring(0,200)+"…";truncated=true;}names.add(n);}}return names.isEmpty()?"未命名用药记录":String.join("＋",names)+(truncated?"（名称已截断）":"");}
  static String actionName(Object raw){String a=Objects.toString(raw,"").trim().toLowerCase(Locale.ROOT);if(Set.of("start","开始").contains(a))return "开始";if(Set.of("stop","停止","停用").contains(a))return "停止";if(Set.of("pause","暂停").contains(a))return "暂停";if(Set.of("recovery","resume","恢复","继续").contains(a))return "恢复";if(Set.of("cancel","取消").contains(a))return "取消";return "操作类型待核对";}
 }
