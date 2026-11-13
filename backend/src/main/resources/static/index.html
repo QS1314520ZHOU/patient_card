@@ -68,16 +68,16 @@
       <p class="ai-notice">仅供交班参考，不替代医护判断或正式病历。请核实患者、来源和时间，缺失不等于正常。</p>
       <div class="ai-controls"><label for="aiPatient">患者</label><select id="aiPatient"></select><button id="aiLoad" type="button">读取资料</button><button id="aiGenerate" type="button" class="ai-primary">生成交班草稿</button></div>
       <p id="aiStatus" class="ai-status" role="status"></p><div id="aiWarnings" class="ai-warnings"></div>
-      <section class="trend-section"><div class="trend-header"><div><h3>个性化趋势</h3><p class="ai-tip">结合病情推荐有记录的指标，可手动调整；仅供参考，请核对原系统。</p></div><button id="aiChartGenerate" type="button">生成个性化图表</button></div><p id="aiChartStatus" role="status" class="ai-status"></p><div id="aiChart"></div></section>
+      <section class="trend-section"><div class="trend-header"><div><h3>个性化趋势</h3><p class="ai-tip">根据病程和已有记录推荐关注指标与用药；仅供参考，请核对原系统。</p></div><button id="aiChartGenerate" type="button">生成个性化图表</button></div><p id="aiChartStatus" role="status" class="ai-status"></p><div id="aiChart"></div></section>
       <div class="ai-layout"><section><h3>交班草稿</h3><p class="ai-tip">可修改；核对状态仅保留在当前页面，关闭后清除，不记录核对人。</p><textarea id="aiDraft" rows="16" placeholder="生成后在此核对、修改" aria-label="交班草稿"></textarea><button id="aiConfirm" type="button" disabled>标记已核对</button><span id="aiConfirmed" role="status"></span></section>
       <section><h3>资料时间线</h3><p id="aiTimelineTip" class="ai-tip">按时间查看资料，生成后请结合原系统逐条核对。</p><div id="aiSources" class="ai-timeline"></div></section></div>
     </div>
   </dialog>
-  <link rel="stylesheet" href="handover.css?v=4">
+  <link rel="stylesheet" href="handover.css?v=5">
   <link rel="stylesheet" href="group-settings.css?v=1">
   <script src="patient-card.js?v=6"></script>
   <script src="group-settings.js?v=1"></script>
-  <script src="handover.js?v=4"></script>
+  <script src="handover.js?v=5"></script>
   <script src="overview-theme.js?v=5"></script>
 </body>
 </html>
