@@ -103,3 +103,8 @@ overview:
   rescue-keywords: 除颤,心肺复苏,抢救
   los:
     long-stay-days: 14
+
+# AI 交班默认关闭；院内联调验证后再启用，详见 docs/AI交班部署说明.md。
+handover:
+  enabled: false
+  bqdm-by-dept: {}
