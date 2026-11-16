@@ -159,7 +159,7 @@
   }
 
   function isHigh(risk) {
-    return !!risk && (risk.level === 'high' || risk.result === '高危');
+    return !!risk && (risk.level === 'high' || /极度风险|高危|高风险/.test(risk.result || ''));
   }
 
   function fmtMl(v) {
@@ -195,11 +195,10 @@
   function isolationTag(raw) {
     const s = String(raw == null ? '' : raw).trim();
     if (!s) return null;
-    if (/空气/.test(s)) return { t: '空气隔离', c: 'iso-air', title: '隔离医嘱：' + s };
-    if (/飞沫/.test(s)) return { t: '飞沫隔离', c: 'iso-droplet', title: '隔离医嘱：' + s };
-    if (/保护/.test(s)) return { t: '保护隔离', c: 'iso-protect', title: '隔离医嘱：' + s };
-    if (/接触|严密/.test(s)) return { t: '接触隔离', c: 'iso-contact', title: '隔离医嘱：' + s };
-    if (/隔离/.test(s)) return { t: '隔离', c: 'iso-other', title: '隔离医嘱：' + s };
+    const labels = s.split(',').map((label) => label.trim()).filter(Boolean);
+    const c = /空气/.test(s) ? 'iso-air' : /飞沫/.test(s) ? 'iso-droplet'
+      : /保护/.test(s) ? 'iso-protect' : /接触/.test(s) ? 'iso-contact' : 'iso-other';
+    if (/隔离/.test(s)) return { t: labels.join('、'), c, title: '隔离医嘱：' + s };
     return null;
   }
 
@@ -220,7 +219,7 @@
     if (p.difficultAirway) alert.push({ t: '困难气道', c: 'alert-crit' });
     const iso = isolationTag(p.isolation);
     if (iso) soft.push(iso);
-    if (isHigh(p.pressureDamageRisk)) alert.push({ t: '压疮高危', c: 'alert-high' });
+    if (isHigh(p.pressureDamageRisk)) alert.push({ t: '压疮' + (p.pressureDamageRisk.result || '高危'), c: 'alert-high' });
     if (isHigh(p.fallRisk)) alert.push({ t: '跌倒高危', c: 'alert-fall' });
     if (isHigh(p.pipeRisk)) soft.push({ t: '导管高危', c: 'soft' });
     if (isHigh(p.nutritionRisk)) soft.push({ t: '营养', c: 'soft' });

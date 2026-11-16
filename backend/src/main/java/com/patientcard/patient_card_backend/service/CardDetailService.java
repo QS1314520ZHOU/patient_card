@@ -881,15 +881,15 @@ public class CardDetailService {
     /**
      * 隔离启停判定：按 topic 取 orderTime 最新事件；
      * 事件名以“停”开头或 status=已停止 → 该 topic 关闭，否则生效。
-     * topic：接触(含严密/床旁接触/预防性接触)、空气、保护性、飞沫 + 医嘱名内嵌的 MDRO 菌名。
+     * topic：医嘱中的隔离关键词，保留原始隔离类型。
      */
     private List<IsolationTag> resolveIsolationTags(List<Document> orders) {
         Map<String, Document> latestByTopic = new LinkedHashMap<>();
         for (Document d : orders) {
             String raw = str(d.get("orderName"));
             if (raw == null) continue;
-            boolean isStop = raw.trim().startsWith("停");
-            String core = isStop ? raw.trim().substring(1).replace("*", "") : raw;
+            boolean isStop = (raw.trim().startsWith("停") || raw.trim().startsWith("解除"));
+            String core = isStop ? raw.trim().replaceFirst("^(?:停|解除)[*＊]*", "") : raw;
             for (String topic : topicsOf(core)) {
                 latestByTopic.putIfAbsent(topic, d);
                 // orders 已按 orderTime 倒序，每个 topic 第一次出现即最新
@@ -900,20 +900,12 @@ public class CardDetailService {
             String topic = en.getKey();
             Document latest = en.getValue();
             String raw = str(latest.get("orderName"));
-            boolean isStop = raw != null && raw.trim().startsWith("停");
+            boolean isStop = raw != null && (raw.trim().startsWith("停") || raw.trim().startsWith("解除"));
             boolean stopped = "已停止".equals(str(latest.get("status")));
             if (isStop || stopped) continue;
 
-            String label;
-            String kind;
-            switch (topic) {
-                case "air": label = "空气隔离"; kind = "air"; break;
-                case "protect": label = "保护性隔离"; kind = "protect"; break;
-                case "droplet": label = "飞沫隔离"; kind = "droplet"; break;
-                case "contact": label = "接触隔离"; kind = "contact"; break;
-                case "other": label = "隔离"; kind = "other"; break;
-                default: label = topic; kind = "bug"; break; // MDRO 菌名
-            }
+            String label = topic;
+            String kind = IsolationKeywords.kind(topic);
             String title = raw + "（" + str(latest.get("status")) + " · "
                     + fmt(toDate(latest.get("orderTime"))) + "）";
             tags.add(new IsolationTag(label, kind, title));
@@ -922,17 +914,7 @@ public class CardDetailService {
     }
 
     private List<String> topicsOf(String core) {
-        List<String> topics = new ArrayList<>();
-        if (core.contains("空气")) topics.add("air");
-        if (core.contains("保护")) topics.add("protect");
-        if (core.contains("飞沫")) topics.add("droplet");
-        if (core.contains("接触") || core.contains("严密")) topics.add("contact");
-        if (topics.isEmpty() && core.contains("隔离")) topics.add("other");
-        for (String bug : new String[]{"CRKP", "CRAB", "MRSA", "VRE", "鲍曼", "克雷伯",
-                "念珠菌", "结核", "多重耐药", "泛耐药"}) {
-            if (core.contains(bug)) topics.add(bug);
-        }
-        return topics;
+        return IsolationKeywords.extract(core);
     }
 
     // ================= 通用工具 =================

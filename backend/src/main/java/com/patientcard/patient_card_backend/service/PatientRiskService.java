@@ -198,8 +198,9 @@ public class PatientRiskService {
     public RiskAssessment assessmentFor(String scoreType, Integer total, Date time, String conclusion) {
         String level = "unknown";
         String result = "未分级";
-        // 跌倒：优先使用院内结论，避免自算阈值与院内分级不一致
-        if (fallScoreType != null && fallScoreType.equals(scoreType)
+        // 跌倒、压疮优先使用院内结论，保留极度风险等原始分级
+        if (((fallScoreType != null && fallScoreType.equals(scoreType))
+                || getPressureTypes().contains(scoreType))
                 && conclusion != null && !conclusion.trim().isEmpty()) {
             level = levelFromConclusion(conclusion);
             result = conclusion.trim();
@@ -257,7 +258,7 @@ public class PatientRiskService {
     }
 
     private String levelFromConclusion(String conclusion) {
-        if (conclusion.contains("高")) {
+        if (conclusion.contains("极度风险") || conclusion.contains("高")) {
             return "high";
         }
         if (conclusion.contains("中")) {

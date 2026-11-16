@@ -274,8 +274,8 @@ public class CardSupportService {
             if (raw == null) {
                 continue;
             }
-            boolean isStop = raw.trim().startsWith("停");
-            String core = isStop ? raw.trim().substring(1).replace("*", "") : raw;
+            boolean isStop = (raw.trim().startsWith("停") || raw.trim().startsWith("解除"));
+            String core = isStop ? raw.trim().replaceFirst("^(?:停|解除)[*＊]*", "") : raw;
             for (String topic : isolationTopics(core)) {
                 latestByTopic.putIfAbsent(topic, d);
             }
@@ -283,32 +283,18 @@ public class CardSupportService {
         List<String> labels = new java.util.ArrayList<>();
         for (Map.Entry<String, Document> en : latestByTopic.entrySet()) {
             String raw = str(en.getValue().get("orderName"));
-            boolean isStop = raw != null && raw.trim().startsWith("停");
+            boolean isStop = raw != null && (raw.trim().startsWith("停") || raw.trim().startsWith("解除"));
             boolean stopped = "已停止".equals(str(en.getValue().get("status")));
             if (isStop || stopped) {
                 continue;
             }
-            String topic = en.getKey();
-            switch (topic) {
-                case "air": labels.add("空气隔离"); break;
-                case "protect": labels.add("保护隔离"); break;
-                case "droplet": labels.add("飞沫隔离"); break;
-                case "contact": labels.add("接触隔离"); break;
-                case "other": labels.add("隔离"); break;
-                default: labels.add(topic); break;
-            }
+            labels.add(en.getKey());
         }
         return labels.isEmpty() ? null : String.join(",", labels);
     }
 
     private List<String> isolationTopics(String core) {
-        List<String> topics = new java.util.ArrayList<>();
-        if (core.contains("空气")) topics.add("air");
-        if (core.contains("保护")) topics.add("protect");
-        if (core.contains("飞沫")) topics.add("droplet");
-        if (core.contains("接触") || core.contains("严密")) topics.add("contact");
-        if (topics.isEmpty() && core.contains("隔离")) topics.add("other");
-        return topics;
+        return IsolationKeywords.extract(core);
     }
 
     private static String trimToNull(Object v) {
