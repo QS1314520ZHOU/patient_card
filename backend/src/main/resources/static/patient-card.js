@@ -265,14 +265,17 @@
     const grp = groupKey(p);
     const bed = p.bedNumber || p.hisBed || '—';
     // 卡头配色标识：北京时间 昨日08:00 ~ 今日08:00 入科（与 KPI「新收」实时口径无关）
-    const isNew = !!p.newAdmission24h;
+    const admittedAt = new Date(p.icuAdmissionTime || p.admissionTime).getTime();
+    const admissionAge = Date.now() - admittedAt;
+    const isNew = !!p.newAdmission24h && Number.isFinite(admittedAt)
+      && admissionAge >= 0 && admissionAge <= 24 * 3600 * 1000;
     return `<article class="card${isNew ? ' is-new24' : ''} ${activeId === p.id ? 'active' : ''}" data-id="${esc(p.id)}" data-bed="${esc(bed)}">
       <header class="card-head">
         <div class="bed">${esc(bed)}床</div>
         <div class="name">${esc(p.name || '—')}</div>
         <div class="head-right">
           ${isNew
-            ? `<span class="pill-new" title="昨日08:00~今日08:00 入科 · ${esc(admit)}">新收 ${esc(admit.length > 6 ? admit.slice(6) : admit)}</span>`
+            ? `<span class="pill-new" title="昨日08:00~今日08:00 入科且未超过24小时 · ${esc(admit)}">24h新收 ${esc(admit.length > 6 ? admit.slice(6) : admit)}</span>`
             : `<span class="pill-days" title="入科 ${days} 天">入科${days}天</span>`}
           ${longStay ? `<span class="pill-days long" title="ICU 住院已达 ${days} 天，晨会重点评估">长程</span>` : ''}
         </div>

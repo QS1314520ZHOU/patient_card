@@ -82,13 +82,15 @@
   }
 
   /**
-   * 卡头配色标识：入科时间落在北京时间 [昨日 08:00, 今日 08:00)；与「本班新收 / 新入科」统计口径无关。
+   * 卡头配色标识：入科时间落在北京时间 [昨日 08:00, 今日 08:00)，且实际入科未超过 24 小时；与「本班新收 / 新入科」统计口径无关。
    * 以后端 newAdmission24h 为准；旧后端/离线演示缺该字段时按 asOf 在前端兜底计算。
    */
   function isNew24(p) {
-    if (typeof p.newAdmission24h === 'boolean') return p.newAdmission24h;
     const t = toDate(p.admissionTime);
     if (!t) return false;
+    const age = Date.now() - t.getTime();
+    if (age < 0 || age > 24 * 3600 * 1000) return false;
+    if (typeof p.newAdmission24h === 'boolean') return p.newAdmission24h;
     const snap = state.snapshot || {};
     let from = toDate(snap.newAdmitFrom);
     let to = toDate(snap.newAdmitTo);
@@ -911,8 +913,8 @@
     const daysTitle = longStay
       ? `ICU 住院已达 ${p.icuDays} 天（阈值 ${snap.longStayDays} 天），晨会重点评估 MDT / 脱机与营养`
       : `入科 ${fmtTime(p.admissionTime)}`;
-    const newPill = `<span class="pill pill-new" title="昨日08:00~今日08:00 入科 · ${esc(fmtTime(p.admissionTime))}">`
-      + `新收 ${esc(fmtShort(p.admissionTime).slice(6))}</span>`;
+    const newPill = `<span class="pill pill-new" title="昨日08:00~今日08:00 入科且未超过24小时 · ${esc(fmtTime(p.admissionTime))}">`
+      + `24h新收 ${esc(fmtShort(p.admissionTime).slice(6))}</span>`;
     const daysPill = new24 ? newPill : p.icuDays == null ? ''
       : `<span class="pill pill-days${longStay ? ' long' : ''}" title="${esc(daysTitle)}">`
         + `入科${p.icuDays}天</span>`

@@ -264,9 +264,7 @@ public class DeptOverviewService {
             boolean isNew = p.getAdmissionTime() != null
                     && !p.getAdmissionTime().before(eventFrom) && p.getAdmissionTime().before(eventTo);
             p.setNewAdmission(isNew);
-            p.setNewAdmission24h(p.getAdmissionTime() != null
-                    && !p.getAdmissionTime().before(newAdmitWindow[0])
-                    && p.getAdmissionTime().before(newAdmitWindow[1]));
+            p.setNewAdmission24h(isNewAdmission24h(p.getAdmissionTime(), asOf));
             p.setHospitalAdmission(AdmissionTypeFlags.hospitalAdmission(admissionType));
             p.setSurgeryAdmission(AdmissionTypeFlags.surgeryAdmission(admissionType));
             p.setTransferIn(AdmissionTypeFlags.transferIn(admissionType));
@@ -892,6 +890,14 @@ public class DeptOverviewService {
         ZonedDateTime to = zdt.toLocalDate().atTime(8, 0).atZone(HOSPITAL_ZONE);
         ZonedDateTime from = to.minusDays(1);
         return new Date[]{Date.from(from.toInstant()), Date.from(to.toInstant())};
+    }
+
+    /** 交班窗口内入科且实际入科未超过 24 小时才显示卡头提示。 */
+    public static boolean isNewAdmission24h(Date admittedAt, Date now) {
+        if (admittedAt == null || now == null || admittedAt.after(now)) return false;
+        Date[] window = newAdmissionWindow(now);
+        return !admittedAt.before(window[0]) && admittedAt.before(window[1])
+                && now.getTime() - admittedAt.getTime() <= 24L * 60 * 60 * 1000;
     }
 
     private static int sumInt(List<OverviewPatient> patients,

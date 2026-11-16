@@ -70,15 +70,13 @@ public class PatientRiskService {
 
         Date[] businessWindow = currentBusinessWindow();
         // 卡头配色标识固定口径：北京时间 [昨日08:00, 今日08:00)
-        Date[] markWindow = DeptOverviewService.newAdmissionWindow(new Date());
+        Date markNow = new Date();
         for (Patient patient : patients) {
             Date admittedAt = patient.getIcuAdmissionTime();
             patient.setNewAdmission(admittedAt != null
                     && !admittedAt.before(businessWindow[0])
                     && admittedAt.before(businessWindow[1]));
-            patient.setNewAdmission24h(admittedAt != null
-                    && !admittedAt.before(markWindow[0])
-                    && admittedAt.before(markWindow[1]));
+            patient.setNewAdmission24h(DeptOverviewService.isNewAdmission24h(admittedAt, markNow));
             String admissionType = patient.getAdmissionType() == null ? "" : patient.getAdmissionType().trim();
             patient.setHospitalAdmission(AdmissionTypeFlags.hospitalAdmission(admissionType));
             patient.setSurgeryAdmission(AdmissionTypeFlags.surgeryAdmission(admissionType));
