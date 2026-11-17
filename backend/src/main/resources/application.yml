@@ -3,6 +3,7 @@ vte:
   enabled: true
 risk:
   pressure:
+    extreme-max: 9
     high-max: 12
     medium-max: 14
   nutrition:

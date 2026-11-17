@@ -28,6 +28,28 @@
   const HANDSHAKE_MAX_RETRY = 5;
   const REFRESH_MS = 30000;
 
+  // 以服务器时间为基准，用单调时钟推进，避免客户端时间或时区影响判断。
+  let serverEpoch = null;
+  let serverTick = 0;
+  function hospitalDate(value) {
+    if (value == null || value === '') return null;
+    let text = value;
+    if (typeof text === 'string') {
+      text = text.trim().replace(' ', 'T');
+      if (/^\d{4}-\d{2}-\d{2}T/.test(text) && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)) text += '+08:00';
+    }
+    const date = new Date(text);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  function syncServerClock(value) {
+    const date = hospitalDate(value);
+    serverEpoch = date ? date.getTime() : null;
+    serverTick = performance.now();
+  }
+  function serverNow() {
+    return serverEpoch == null ? null : serverEpoch + Math.max(0, performance.now() - serverTick);
+  }
+
   function esc(value) {
     if (value === null || value === undefined) return '';
     return String(value)
@@ -141,10 +163,11 @@
 
   function fmtShort(value) {
     if (!value) return '—';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '—';
+    const parsed = hospitalDate(value);
+    if (!parsed) return '—';
+    const d = new Date(parsed.getTime() + 8 * 3600 * 1000);
     const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   }
 
   function bedSort(value) {
@@ -159,7 +182,7 @@
   }
 
   function isHigh(risk) {
-    return !!risk && (risk.level === 'high' || /极度风险|高危|高风险/.test(risk.result || ''));
+    return !!risk && (risk.level === 'high' || /极度风险|极度危险|高度危险|高危|高风险/.test(risk.result || ''));
   }
 
   function fmtMl(v) {
@@ -265,10 +288,11 @@
     const grp = groupKey(p);
     const bed = p.bedNumber || p.hisBed || '—';
     // 卡头配色标识：北京时间 昨日08:00 ~ 今日08:00 入科（与 KPI「新收」实时口径无关）
-    const admittedAt = new Date(p.icuAdmissionTime || p.admissionTime).getTime();
-    const admissionAge = Date.now() - admittedAt;
+    const admittedAt = hospitalDate(p.icuAdmissionTime || p.admissionTime)?.getTime();
+    const now = serverNow();
+    const admissionAge = now == null ? null : now - admittedAt;
     const isNew = !!p.newAdmission24h && Number.isFinite(admittedAt)
-      && admissionAge >= 0 && admissionAge <= 24 * 3600 * 1000;
+      && (now == null || (admissionAge >= 0 && admissionAge <= 24 * 3600 * 1000));
     return `<article class="card${isNew ? ' is-new24' : ''} ${activeId === p.id ? 'active' : ''}" data-id="${esc(p.id)}" data-bed="${esc(bed)}">
       <header class="card-head">
         <div class="bed">${esc(bed)}床</div>
@@ -633,7 +657,7 @@
     document.getElementById('kpiFall').innerHTML = `${fall}<em>人</em>`;
     document.getElementById('kpiPressure').innerHTML = `${press}<em>人</em>`;
     document.getElementById('kpiNew').innerHTML = `${neu}<em>人</em>`;
-    asOf.textContent = `数据更新 ${fmtShort(new Date())}`;
+    asOf.textContent = `数据更新 ${fmtShort(serverNow())}`;
   }
 
   function pick(id, opts) {
@@ -751,6 +775,7 @@
       beds = bedResponse.ok ? await bedResponse.json() : [];
       const data = await patientResponse.json();
       if (current !== sequence) return;
+      syncServerClock(patientResponse.headers.get("X-Server-Time") || patientResponse.headers.get("Date"));
       patients = Array.isArray(data) ? data : [];
       // 刷新后选中患者可能已出科
       if (activeId && !patients.some((p) => p.id === activeId)) {

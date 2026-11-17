@@ -37,6 +37,8 @@ public class PatientRiskService {
     private final MongoTemplate mongoTemplate;
     private final VteAssessmentService vteAssessmentService;
 
+    @Value("${risk.pressure.extreme-max:9}")
+    private int pressureExtremeMax;
     @Value("${risk.pressure.high-max:12}")
     private int pressureHighMax;
     @Value("${risk.pressure.medium-max:14}")
@@ -215,8 +217,11 @@ public class PatientRiskService {
                     result = "低危";
                 }
             } else if (getPressureTypes().contains(scoreType)) {
-                // Braden：total < high-max（默认 <12）为高危
-                if (total < pressureHighMax) {
+                // 院内 Braden 配置：9分及以下极度危险，10～12分高度危险。
+                if (total <= pressureExtremeMax) {
+                    level = "high";
+                    result = "极度危险";
+                } else if (total <= pressureHighMax) {
                     level = "high";
                     result = "高危";
                 } else if (total <= pressureMediumMax) {
@@ -256,7 +261,7 @@ public class PatientRiskService {
     }
 
     private String levelFromConclusion(String conclusion) {
-        if (conclusion.contains("极度风险") || conclusion.contains("高")) {
+        if (conclusion.contains("极度风险") || conclusion.contains("极度危险") || conclusion.contains("高")) {
             return "high";
         }
         if (conclusion.contains("中")) {

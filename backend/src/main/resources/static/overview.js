@@ -64,11 +64,32 @@
   }
 
   // ================= 时钟 =================
+  // 以服务器时间为基准，用单调时钟推进，避免客户端时间或时区影响判断。
+  let serverEpoch = null;
+  let serverTick = 0;
+  function hospitalDate(value) {
+    if (value == null || value === '') return null;
+    let text = value;
+    if (typeof text === 'string') {
+      text = text.trim().replace(' ', 'T');
+      if (/^\d{4}-\d{2}-\d{2}T/.test(text) && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)) text += '+08:00';
+    }
+    const date = new Date(text);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  function syncServerClock(value) {
+    const date = hospitalDate(value);
+    serverEpoch = date ? date.getTime() : null;
+    serverTick = performance.now();
+  }
+  function serverNow() {
+    return serverEpoch == null ? null : serverEpoch + Math.max(0, performance.now() - serverTick);
+  }
+
   function pad(n) { return String(n).padStart(2, '0'); }
   function toDate(value) {
     if (!value) return null;
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
+    return hospitalDate(value);
   }
   function fmtTime(value) {
     const d = toDate(value);
@@ -88,8 +109,9 @@
   function isNew24(p) {
     const t = toDate(p.admissionTime);
     if (!t) return false;
-    const age = Date.now() - t.getTime();
-    if (age < 0 || age > 24 * 3600 * 1000) return false;
+    const now = serverNow();
+    const age = now == null ? null : now - t.getTime();
+    if (now != null && (age < 0 || age > 24 * 3600 * 1000)) return false;
     if (typeof p.newAdmission24h === 'boolean') return p.newAdmission24h;
     const snap = state.snapshot || {};
     let from = toDate(snap.newAdmitFrom);
@@ -99,7 +121,8 @@
       const BJ = 8 * 3600 * 1000;
       const asOfText = String(snap.asOf || '').trim().replace(' ', 'T');
       const base = (asOfText && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(asOfText) ? toDate(asOfText + '+08:00') : toDate(asOfText))
-        || new Date();
+        || toDate(serverNow());
+      if (!base) return false;
       const bj = new Date(base.getTime() + BJ); // 用 UTC 字段读取北京时间的年月日
       to = new Date(Date.UTC(bj.getUTCFullYear(), bj.getUTCMonth(), bj.getUTCDate(), 8, 0, 0) - BJ);
       from = new Date(to.getTime() - 24 * 3600 * 1000);
@@ -535,6 +558,7 @@
         return;
       }
       state.sequence += 1;
+      syncServerClock(snap.asOf);
       state.snapshot = snap;
       state.refreshMs = (snap.refreshSeconds || 60) * 1000;
       renderAll();
@@ -559,6 +583,7 @@
       if (seq !== state.sequence) return;
       const firstLoad = !state.snapshot;
       const sameSnapshot = state.snapshot && state.snapshot.snapshotId === snapshot.snapshotId;
+      syncServerClock(response.headers.get("Date") || snapshot.asOf);
       state.snapshot = snapshot;
       state.refreshMs = (snapshot.refreshSeconds || 60) * 1000;
       renderAll();

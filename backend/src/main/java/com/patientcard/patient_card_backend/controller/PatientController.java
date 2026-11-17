@@ -82,7 +82,7 @@ public class PatientController {
      * 患者卡片专用接口：科室只匹配 deptCode，患者状态固定 admitted。
      */
     @GetMapping("/dashboard/{deptCode}")
-    public List<Patient> getDashboardPatients(@PathVariable String deptCode) {
+    public List<Patient> getDashboardPatients(@PathVariable String deptCode, javax.servlet.http.HttpServletResponse response) {
         List<Patient> patients = mongoTemplate.find(
                 new Query(Criteria.where("deptCode").is(deptCode.trim()).and("status").is("admitted")),
                 Patient.class,
@@ -93,6 +93,8 @@ public class PatientController {
         patientRiskService.enrich(patients);
         cardSupportService.enrich(patients);
         cardFluidService.enrich(patients, deptCode.trim());
+        response.setHeader("X-Server-Time", java.time.Instant.now().toString());
+        response.setHeader("Cache-Control", "no-store");
         return patients;
     }
 
