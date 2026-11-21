@@ -29,7 +29,7 @@ public class HandoverData {
   Map.entry("param_ibp_s","有创收缩压"),Map.entry("param_ibp_m","有创平均压"),Map.entry("param_ibp_d","有创舒张压"));
  public HandoverData(MongoTemplate mongo,BlbcjlClient client,HandoverConfig config,@Qualifier("centerMongoTemplate") ObjectProvider<MongoTemplate> center,PatientRiskService risks){this.mongo=mongo;this.client=client;this.config=config;this.center=center;this.risks=risks;}
  public static class Source {public String id, kind, title, time, text; public boolean window,stale,excerpted; public int sentChars;}
- public static class Snapshot {@com.fasterxml.jackson.annotation.JsonIgnore public String mrn,hisPid; @com.fasterxml.jackson.annotation.JsonIgnore public Date admission,icuAdmission; public String from,to,asOf,patientId;public List<Source> sources=new ArrayList<>();public List<String> warnings=new ArrayList<>();}
+ public static class Snapshot {@com.fasterxml.jackson.annotation.JsonIgnore public String mrn,hisPid; @com.fasterxml.jackson.annotation.JsonIgnore public Date admission,icuAdmission; public Map<String,String> identity=new LinkedHashMap<>(); public String from,to,asOf,patientId;public List<Source> sources=new ArrayList<>();public List<String> warnings=new ArrayList<>();}
  public void verify(String dept, Snapshot snapshot){Patient p=patient(dept,snapshot.patientId);if(!Objects.equals(snapshot.mrn,p.getMrn())||!Objects.equals(snapshot.hisPid,p.getHisPid())||!Objects.equals(snapshot.admission,p.getAdmissionTime())||!Objects.equals(snapshot.icuAdmission,p.getIcuAdmissionTime()))throw new IllegalStateException("患者住院或入科信息已改变，请重新打开");}
  Patient patient(String dept,String id){
   if(dept==null||dept.isBlank()||id==null||id.isBlank()||dept.length()>100||id.length()>100)throw new IllegalArgumentException("患者或科室参数无效");
@@ -44,8 +44,8 @@ public class HandoverData {
   String mrn=first.getMrn(); String ward=config.getBqdmByDept().getOrDefault(dept,defaultBqdm);
   // 院内 BLBCJL 可按住院号查询全部病区；空 BQDM 不是缺少配置。
   ward = ward == null ? "" : ward.trim();
-  Instant now=Instant.now(); Window win=new Window(now); Snapshot out=new Snapshot();
-  out.patientId=id;out.mrn=mrn;out.hisPid=first.getHisPid();out.admission=admission;out.icuAdmission=first.getIcuAdmissionTime();out.from=win.from.toString();out.to=win.to.toString();out.asOf=win.asOf.toString();
+  Instant now=Instant.now(); Window win=new Window(now,config.getShiftStart(),config.getShiftEnd()); Snapshot out=new Snapshot();
+  out.identity.put("姓名",Objects.toString(first.getName(),"未提供"));out.identity.put("床位",Objects.toString(first.getHisBed(),"未提供"));out.identity.put("住院时间",LocalDateTime.ofInstant(admission.toInstant(),ZONE).toString());out.identity.put("入科时间",first.getIcuAdmissionTime()==null?"未提供":LocalDateTime.ofInstant(first.getIcuAdmissionTime().toInstant(),ZONE).toString());out.patientId=id;out.mrn=mrn;out.hisPid=first.getHisPid();out.admission=admission;out.icuAdmission=first.getIcuAdmissionTime();out.from=win.from.toString();out.to=win.to.toString();out.asOf=win.asOf.toString();
   List<NoteParser.Note> notes=NoteParser.parse(client.fetch(mrn,ward),mrn,ward,1000,100000);
   LocalDateTime admitted=LocalDateTime.ofInstant(admission.toInstant(),ZONE);
   int unknown=0,outside=0,index=1;
@@ -55,7 +55,7 @@ public class HandoverData {
    if(n.time.isBefore(admitted)||n.time.isAfter(win.asOf)){outside++;continue;}
    Source s=new Source();s.id="N"+index++;s.kind="病程";s.title=n.type;s.time=n.time.toString();s.text=n.body;s.window=win.contains(n.time);out.sources.add(s);
   }
-  out.warnings.add("病程时间取正文开头，不等同签署时间；交班时段为昨日08:00（含）至今日08:00（不含）。");
+  out.warnings.add("病程时间取正文开头，不等同签署时间；交班时段为配置窗口（含开始、不含结束），时间均为北京时间。");
   if(unknown>0)out.warnings.add("有 "+unknown+" 份病程无法识别开头时间，未用于生成。");
   if(outside>0)out.warnings.add("有 "+outside+" 份病程不在本次住院时间范围或为未来时间，已排除。");
   Date start=first.getIcuAdmissionTime();
@@ -67,7 +67,7 @@ public class HandoverData {
      q.with(Sort.by(Sort.Direction.DESC,"time")).limit(1);
      Document d=mongo.findOne(q,Document.class,bedside); if(d==null||!(d.get("time") instanceof Date))continue;
      String value=Objects.toString(d.get("strVal"),"").trim();if(value.isEmpty()||value.length()>100)continue;
-     Date t=(Date)d.get("time");Source s=new Source();s.id="V"+index++;s.kind="生命体征";s.title=e.getValue();s.time=LocalDateTime.ofInstant(t.toInstant(),ZONE).toString();s.text=value;s.stale=t.toInstant().isBefore(now.minus(Duration.ofHours(4)));out.sources.add(s);
+     Date t=(Date)d.get("time");Source s=new Source();s.id="V"+index++;s.kind="生命体征";s.title=e.getValue();s.time=LocalDateTime.ofInstant(t.toInstant(),ZONE).toString();s.window=win.contains(LocalDateTime.ofInstant(t.toInstant(),ZONE));s.text=value;s.stale=t.toInstant().isBefore(now.minus(Duration.ofHours(4)));out.sources.add(s);
     }
    } catch(Exception e){out.sources.removeIf(s->"生命体征".equals(s.kind));out.warnings.add("生命体征读取失败。");}
   }

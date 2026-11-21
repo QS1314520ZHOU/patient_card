@@ -68,16 +68,20 @@
       <p class="ai-notice">AI 内容仅供交班参考，请医护确认；数据缺失不等于正常。</p>
       <div class="ai-controls"><label for="aiPatient">患者</label><select id="aiPatient"></select><button id="aiLoad" type="button">读取资料</button><button id="aiGenerate" type="button" class="ai-primary">生成交班草稿</button></div>
       <p id="aiStatus" class="ai-status" role="status"></p><div id="aiWarnings" class="ai-warnings"></div>
+
+      <div id="aiIdentity" class="isbar-identity"></div><p id="aiWindow" class="ai-tip"></p>
+      <section class="raw-section"><h3>关键原始记录 <small>直接读取，不经 AI 改写</small></h3><p class="ai-tip">当前读取范围内的记录，不代表完整病历；医嘱不等于执行，管路状态需床旁核对。</p><div id="aiRawRecords"></div></section>
+      <div class="ai-controls ai-view-tabs"><button id="aiViewBrief" type="button" aria-pressed="true">晨会重点</button><button id="aiViewFull" type="button" aria-pressed="false">完整 ISBAR · 编辑</button></div>
+      <div id="aiLayout" class="ai-layout morning-layout"><section><h3 id="aiDraftTitle">晨会重点 · AI 草稿</h3><p class="ai-tip">与 ISBAR 共用内容；编辑后同步。本页核对未保存、未正式签署。</p><div id="aiBrief"></div><div id="aiSections" hidden></div><textarea hidden id="aiDraft" aria-label="交班草稿"></textarea><button id="aiConfirm" type="button" disabled>标记已核对</button><span id="aiConfirmed" role="status"></span></section>
+      <section><details id="aiSourcePanel"><summary>病程与全部已读取来源</summary><p id="aiTimelineTip" class="ai-tip">资料按时间倒序排列。</p><div id="aiSources" class="ai-timeline"></div></details></section></div>
       <section class="trend-section"><div class="trend-header"><div><h3>个性化趋势</h3></div><button id="aiChartGenerate" type="button">生成个性化图表</button></div><p id="aiChartStatus" role="status" class="ai-status"></p><div id="aiChart"></div></section>
-      <div class="ai-layout"><section><h3>交班草稿</h3><p class="ai-tip">可修改；核对状态仅保留在当前页面，关闭后清除，不记录核对人。</p><textarea id="aiDraft" rows="16" placeholder="生成后在此核对、修改" aria-label="交班草稿"></textarea><button id="aiConfirm" type="button" disabled>标记已核对</button><span id="aiConfirmed" role="status"></span></section>
-      <section><h3>资料时间线</h3><p id="aiTimelineTip" class="ai-tip">资料按时间倒序排列。</p><div id="aiSources" class="ai-timeline"></div></section></div>
     </div>
   </dialog>
-  <link rel="stylesheet" href="handover.css?v=7">
+  <link rel="stylesheet" href="handover.css?v=9">
   <link rel="stylesheet" href="group-settings.css?v=1">
   <script src="patient-card.js?v=6"></script>
   <script src="group-settings.js?v=1"></script>
-  <script src="handover.js?v=7"></script>
+  <script src="handover.js?v=9"></script>
   <script src="overview-theme.js?v=5"></script>
 </body>
 </html>

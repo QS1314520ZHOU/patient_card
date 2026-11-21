@@ -19,6 +19,16 @@ class HandoverAiTest {
    HandoverAi.Result result=ai.generate(snapshot);assertEquals(2,inputs.size());assertTrue(inputs.get(0).contains("当班合成记录"));assertTrue(inputs.get(1).contains("历史合成记录"));assertEquals(history.text,result.sources.get(1).text);assertTrue(result.sources.get(1).excerpted);assertEquals(1500,result.sources.get(1).sentChars);assertFalse(result.draft.contains("[N1]"));assertTrue(result.draft.contains("本班记录"));
   }finally{server.stop(0);}
  }
+ @Test void preservesLoadedRecordsExcludedFromAiSelection() throws Exception {
+  ObjectMapper mapper=new ObjectMapper();HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+  server.createContext("/chat",x->{x.getRequestBody().readAllBytes();byte[] b=mapper.writeValueAsBytes(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content","S现况\n合成资料 [N1]")))));x.getResponseHeaders().set("Content-Type","application/json");x.sendResponseHeaders(200,b.length);x.getResponseBody().write(b);x.close();});server.start();
+  try{HandoverAi ai=new HandoverAi(mapper);for(var e:Map.of("base","http://127.0.0.1:"+server.getAddress().getPort(),"chatPath","/chat","model","synthetic","embeddingModel","synthetic").entrySet())ReflectionTestUtils.setField(ai,e.getKey(),e.getValue());
+   HandoverData.Snapshot snap=new HandoverData.Snapshot();snap.sources.add(source("N1","合成资料",true));
+   for(int i=1;i<=81;i++){var item=source("O"+i,"合成医嘱"+i,true);item.kind="医嘱";snap.sources.add(item);}
+   HandoverAi.Result result=ai.generate(snap);assertEquals(82,result.availableSources.size());assertEquals(81,result.sources.size());
+   assertTrue(result.availableSources.stream().anyMatch(x->x.id.equals("O81")));assertFalse(result.sources.stream().anyMatch(x->x.id.equals("O81")));
+  }finally{server.stop(0);}
+ }
  @Test void cosineHandlesZeroAndOrder(){assertEquals(0,HandoverAi.cosine(new double[]{0,0},new double[]{1,0}));assertTrue(HandoverAi.cosine(new double[]{1,0},new double[]{1,0})>HandoverAi.cosine(new double[]{1,0},new double[]{0,1}));}
  static HandoverData.Source source(String id,String text,boolean window){HandoverData.Source s=new HandoverData.Source();s.id=id;s.kind="病程";s.title="合成测试";s.text=text;s.time="2026-11-11T10:00";s.window=window;return s;}
  @Test void rejectsUnknownCitationAndIncompleteModelResponse() throws Exception {

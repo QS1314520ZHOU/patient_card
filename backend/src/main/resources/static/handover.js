@@ -2,18 +2,20 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const dlg=$('aiHandoverDialog'), select=$('aiPatient'), draft=$('aiDraft'), status=$('aiStatus'), warnings=$('aiWarnings'), sources=$('aiSources');
+  let sectionEditors=[],brief=true;
   let generation=0, currentDept='', controller=null, chartController=null;
   function resizeDraft(){draft.style.height='auto';draft.style.height=(draft.scrollHeight+2)+'px';}
-  function clear(){ draft.value='';draft.style.height='';warnings.replaceChildren();sources.replaceChildren();$('aiConfirm').disabled=true;$('aiConfirmed').textContent='';status.textContent=''; $('aiChart').replaceChildren();$('aiChartStatus').textContent='';$('aiChartGenerate').disabled=false; }
+  function clear(){ brief=true;sectionEditors=[];$('aiBrief').replaceChildren();$('aiRawRecords').replaceChildren();$('aiSourcePanel').open=false;updateBrief();$('aiSections').replaceChildren();$('aiIdentity').replaceChildren();$('aiWindow').textContent=''; draft.value='';draft.style.height='';warnings.replaceChildren();sources.replaceChildren();$('aiConfirm').disabled=true;$('aiConfirmed').textContent='';status.textContent=''; $('aiChart').replaceChildren();$('aiChartStatus').textContent='';$('aiChartGenerate').disabled=false; }
   function cancel(){generation++;if(controller)controller.abort();controller=null;if(chartController)chartController.abort();chartController=null;}
   function state(){return window.patientCardHandoverContext ? window.patientCardHandoverContext() : {deptCode:'',patients:[]};}
   function valid(dept,id,serial){const ctx=state();return dlg.open&&serial===generation&&dept===ctx.deptCode&&id===select.value&&ctx.patients.some(p=>String(p.id)===id);}
   function renderWarnings(items){warnings.replaceChildren();if(!items||!items.length)return;const box=document.createElement('details'),summary=document.createElement('summary');summary.textContent='数据提醒（'+items.length+'）';box.append(summary);items.forEach(t=>{const p=document.createElement('p');p.textContent='• '+t;box.append(p);});warnings.append(box);}
   const formatTime = value => value ? String(value).replace('T',' ').slice(0,16) : '时间未知';
-  function renderSources(items, generated){
+  function renderSources(items, generated, window){
+    const selected=new Map((window.sources||[]).map(s=>[s.id,s]));
     sources.replaceChildren();
     $('aiTimelineTip').textContent=generated
-      ? '本次送入模型的资料，按时间倒序排列；截断资料可展开查看原文。'
+      ? '全部本次已读取资料，含未送入 AI 的记录；不代表完整病历。编号用于核对，截断内容可展开。'
       : '以下为本次读取的资料，按时间倒序排列；尚未经模型筛选。';
     if(!items||!items.length){sources.textContent='暂无可用资料。';return;}
     const sorted=items.map((item,index)=>({item,index})).sort((a,b)=>{
@@ -26,12 +28,14 @@
     groups.forEach((entries,time)=>{
       const group=document.createElement('section'),stamp=document.createElement('div'),list=document.createElement('div');
       group.className='ai-timeline-group';stamp.className='ai-timeline-time';stamp.textContent=time;list.className='ai-timeline-list';
-      entries.forEach(s=>{
+      entries.forEach(raw=>{const sent=selected.get(raw.id),s={...raw,...(sent||{})};
         const entry=document.createElement('article'),header=document.createElement('div'),kind=document.createElement('span'),title=document.createElement('span'),value=document.createElement('div');
-        entry.className='ai-timeline-entry';header.className='ai-timeline-entry-head';kind.className='ai-timeline-kind';kind.textContent=s.kind||'资料';title.className='ai-timeline-title';title.textContent=s.title||'';header.append(kind,title);
+        entry.id='ai-source-'+s.id;entry.className='ai-timeline-entry';header.className='ai-timeline-entry-head';kind.className='ai-timeline-kind';kind.textContent=(s.id?'['+s.id+'] ':'')+(s.kind||'资料');title.className='ai-timeline-title';title.textContent=s.title||'';header.append(kind,title);
+        if(!s.window&&s.time&&window&&window.to){const flag=document.createElement('span');flag.className='ai-timeline-flag stale';flag.textContent=s.time>=window.to?'窗口后补充':'窗口前背景';header.append(flag);}
         if(s.window){const flag=document.createElement('span');flag.className='ai-timeline-flag';flag.textContent='交班时段';header.append(flag);}
         if(s.stale){const flag=document.createElement('span');flag.className='ai-timeline-flag stale';flag.textContent='超过4小时';header.append(flag);}
         if(s.excerpted){const flag=document.createElement('span');flag.className='ai-timeline-flag stale';flag.textContent='模型仅使用前 '+s.sentChars+' 字';header.append(flag);}
+        if(generated&&!sent){const flag=document.createElement('span');flag.className='ai-timeline-flag stale';flag.textContent='未送入 AI';header.append(flag);}
         entry.append(header);const text=String(s.text||'').trim();value.className='ai-timeline-value';
         if(text.length>240){value.textContent=text.slice(0,240)+'…';entry.append(value);const details=document.createElement('details'),summary=document.createElement('summary'),full=document.createElement('pre');summary.textContent='查看完整原文';full.textContent=text;details.append(summary,full);entry.append(details);}
         else{value.textContent=text||'无内容';entry.append(value);}
@@ -39,11 +43,52 @@
       });group.append(stamp,list);sources.append(group);
     });
   }
+  function revealSource(id){const target=$('ai-source-'+id);if(target){$('aiSourcePanel').open=true;target.scrollIntoView({block:'nearest'});}}
+  function sourceLink(id,label){const a=document.createElement('a');a.href='#ai-source-'+id;a.textContent=label;a.addEventListener('click',e=>{e.preventDefault();revealSource(id);});return a;}
+  function renderRaw(data){
+    const root=$('aiRawRecords');root.replaceChildren();
+    const all=data.availableSources||data.sources||[];
+    ['生命体征','医嘱','管路','风险评分','出入量'].forEach(kind=>{
+      const items=all.filter(s=>s.kind===kind).sort((a,b)=>String(b.time||'').localeCompare(String(a.time||'')));
+      const box=document.createElement('details'),summary=document.createElement('summary');box.className='raw-group';box.open=kind==='生命体征';summary.textContent=kind+' · '+items.length+' 条'+(!items.length?'（未读取到）':'');box.append(summary);
+      items.forEach(s=>{const row=document.createElement('div');row.className='raw-row';const name=document.createElement('strong'),value=document.createElement('span'),time=document.createElement('small');name.textContent=s.title||kind;value.textContent=s.text||'未提供';time.textContent=formatTime(s.time)+(s.stale?' · 超过4小时':'')+' · '+(s.window?'交班时段':s.time&&s.time>=data.to?'窗口后补充':'窗口前背景');row.append(name,value,time,sourceLink(s.id,'['+s.id+'] 原文'));box.append(row);});root.append(box);
+    });
+  }
+  function renderBrief(){
+    const root=$('aiBrief');root.replaceChildren();if(!sectionEditors.length)return;
+    const missing=[];
+    const groups=[['病情变化',e=>e.title.startsWith('S')],['当前支持与分系统评估',e=>e.title.startsWith('A')],['已记录计划与待确认',e=>e.title.startsWith('R')],['特殊交班与物品',e=>['特殊交班','物品交接'].includes(e.title)],['未分区原稿 · 需人工归类',e=>e.title==='未分区原稿']];
+    groups.forEach(([label,match])=>{const entries=sectionEditors.filter(match);if(!entries.length)return;const box=document.createElement('article'),heading=document.createElement('h4');box.className='morning-card';heading.textContent=label;box.append(heading);
+      entries.forEach(e=>{const text=e.input.value.trim();if(!text||text==='待核对'){missing.push(e.title);return;}const row=document.createElement('div'),title=document.createElement('strong'),body=document.createElement('p');row.className='morning-row';title.textContent=e.title;body.textContent=text;row.append(title,body);const refs=document.createElement("div");refs.className="morning-refs";[...new Set(text.match(/\b[A-Z]\d+\b/g)||[])].forEach(id=>{if($("ai-source-"+id))refs.append(sourceLink(id,"["+id+"] 查看依据"));});if(!refs.childElementCount)refs.textContent="未标注有效来源，待核对";body.append(refs);box.append(row);});
+      if(box.children.length===1){const p=document.createElement('p');p.textContent='资料待核对，不表示无异常或已完成。';box.append(p);}root.append(box);
+    });
+    if(missing.length){const p=document.createElement('p');p.className='morning-missing';p.textContent='待核对栏目：'+missing.join('、')+'。';root.append(p);}
+    const edit=document.createElement('button');edit.type='button';edit.textContent='展开 ISBAR 核对、修改';edit.addEventListener('click',()=>{brief=false;updateBrief();});root.append(edit);
+  }
+  function updateBrief(){
+    $('aiLayout').classList.toggle('morning-layout',brief);$('aiSections').hidden=brief;$('aiBrief').hidden=!brief;$('aiViewBrief').setAttribute('aria-pressed',String(brief));$('aiViewFull').setAttribute('aria-pressed',String(!brief));$('aiDraftTitle').textContent=brief?'晨会重点 · AI 草稿':'完整 ISBAR · AI 草稿';if(brief)renderBrief();
+  }
+  $('aiViewFull').addEventListener('click',()=>{brief=false;updateBrief();});
+  $('aiViewBrief').addEventListener('click',()=>{brief=true;updateBrief();});
+  function renderContext(data){
+    $('aiIdentity').textContent='I 身份 · '+Object.entries(data.identity||{}).map(([k,v])=>k+'：'+v).join(' · ');
+    $('aiWindow').textContent='草稿窗口（北京时间）：'+formatTime(data.from)+' 至 '+formatTime(data.to)+'（不含） · 数据截至 '+formatTime(data.asOf)+'；趋势另为滚动近24小时。';
+  }
+  function renderSections(data){
+    sectionEditors=[];
+    Object.entries(data.sections||{'未分区原稿':data.draft||''}).forEach(([title,text])=>{
+      const box=document.createElement('details'),heading=document.createElement('summary'),input=document.createElement('textarea'),refs=document.createElement('div');
+      box.className='isbar-section';box.open=text!=='待核对';heading.textContent=title+(text==='待核对'?' · 待核对':'');input.value=text;input.rows=2;input.setAttribute('aria-label',title+'草稿');
+      const paintRefs=()=>{refs.replaceChildren();const ids=[...new Set((input.value.match(/\b[A-Z]\d+\b/g)||[]))];if(!ids.length)refs.textContent='未标注来源，需人工核对';ids.forEach(id=>{const source=(data.availableSources||data.sources||[]).find(s=>s.id===id);if(!source){const note=document.createElement('span');note.textContent='['+id+'] 来源不存在，待核对';refs.append(note);return;}refs.append(sourceLink(id,'['+id+'] '+(source.title||source.kind)));});};
+      input.addEventListener('input',()=>{$('aiConfirmed').textContent='';$('aiConfirm').disabled=!sectionEditors.some(e=>e.input.value.trim());paintRefs();});paintRefs();
+      box.append(heading,input,refs);$('aiSections').append(box);sectionEditors.push({title,box,input});
+    });updateBrief();
+  }
   async function run(generate){
     const ctx=state(), dept=ctx.deptCode,id=select.value;cancel();clear();const serial=generation;
     if(!dept||!id||dept!==currentDept||!ctx.patients.some(p=>String(p.id)===id)){status.textContent='科室或患者已变化，请关闭后重新打开。';return;}
     controller=new AbortController();$('aiLoad').disabled=true;$('aiGenerate').disabled=true;status.textContent=generate?'正在读取资料并生成草稿，请稍候…':'正在读取病程和体征…';
-    try {const q=new URLSearchParams({dept,patient:id}),resp=await fetch('/api/handover/'+(generate?'generate':'snapshot')+'?'+q,{method:generate?'POST':'GET',cache:'no-store',signal:controller.signal,headers:generate?{'Content-Type':'application/json'}:{}});const data=await resp.json();if(!valid(dept,id,serial))return;if(!resp.ok)throw new Error(data.error||'请求失败');renderWarnings(data.warnings);renderSources(data.sources,generate);if(generate){draft.value=data.draft||'';resizeDraft();$('aiConfirm').disabled=!draft.value;status.textContent='草稿已生成，请结合来源逐条核对。';}else status.textContent=`读取完成，交班时段 ${data.from} 至 ${data.to}（不含结束）。`;
+    try {const q=new URLSearchParams({dept,patient:id}),resp=await fetch('/api/handover/'+(generate?'generate':'snapshot')+'?'+q,{method:generate?'POST':'GET',cache:'no-store',signal:controller.signal,headers:generate?{'Content-Type':'application/json'}:{}});const data=await resp.json();if(!valid(dept,id,serial))return;if(!resp.ok)throw new Error(data.error||'请求失败');renderWarnings(data.warnings);renderSources(data.availableSources||data.sources,generate,data);renderRaw(data);renderContext(data);if(generate){renderSections(data);draft.value=data.draft||'';resizeDraft();$('aiConfirm').disabled=!draft.value;status.textContent='晨会重点已生成，请结合关键原始记录与来源核对。';}else status.textContent=`读取完成，交班时段 ${data.from} 至 ${data.to}（不含结束）。`;
     }catch(e){if(valid(dept,id,serial)&&e.name!=='AbortError')status.textContent=e.message||'读取失败，请重试。';}
     finally{if(serial===generation){$('aiLoad').disabled=false;$('aiGenerate').disabled=false;controller=null;}}
   }
@@ -110,5 +155,5 @@
   $('aiClose').addEventListener('click',()=>dlg.close());dlg.addEventListener('close',()=>{cancel();clear();select.replaceChildren();currentDept='';$('aiLoad').disabled=false;$('aiGenerate').disabled=false;});
   let lastWidth=0;if(window.ResizeObserver)new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;if(dlg.open)resizeDraft();}}).observe(draft);
   select.addEventListener('change',()=>{cancel();clear();$('aiLoad').disabled=false;$('aiGenerate').disabled=false;});$('aiLoad').addEventListener('click',()=>run(false));$('aiGenerate').addEventListener('click',()=>run(true));
-  draft.addEventListener('input',()=>{resizeDraft();$('aiConfirmed').textContent='';$('aiConfirm').disabled=!draft.value.trim();});$('aiConfirm').addEventListener('click',()=>{$('aiConfirmed').textContent='已核对（仅本次页面）';});
+  draft.addEventListener('input',()=>{resizeDraft();$('aiConfirmed').textContent='';$('aiConfirm').disabled=!draft.value.trim();});$('aiConfirm').addEventListener('click',()=>{$('aiConfirmed').textContent='已核对（仅本页；未保存、未签署）';});
 })();

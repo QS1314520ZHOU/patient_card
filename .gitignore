@@ -25,3 +25,6 @@ _exportblock/
 *.log
 .DS_Store
 Thumbs.db
+
+# Local implementation and synthetic browser verification
+/work/
